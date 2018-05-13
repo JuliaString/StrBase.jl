@@ -1,22 +1,18 @@
 # This file includes code that was formerly a part of Julia.
 # License is MIT: LICENSE.md
 
-const V6_COMPAT = VERSION < v"0.7.0-DEV"
+using APITools
+@api init
+@api extend StrAPI, CharSetEncodings, Chars, StrBase
 
 @static V6_COMPAT ? (using Base.Test) : (using Test, Random, Unicode)
 
-using Strs
-import Strs: check_string, UTF_ERR_SHORT, UnicodeError, codepoint_adj, codepoint_rng
-
-const IndexError = isdefined(Base, :StringIndexError) ? StringIndexError : UnicodeError
-
 # Add definitions not present in v0.6.2 for GenericString
 @static if V6_COMPAT
-    Strs.ncodeunits(s::GenericString) = ncodeunits(s.string)
-    Strs.codeunit(s::GenericString) = codeunit(s.string)
-    Strs.codeunit(s::GenericString, i::Integer) = codeunit(s.string, i)
+    ncodeunits(s::GenericString) = ncodeunits(s.string)
+    codeunit(s::GenericString) = codeunit(s.string)
+    codeunit(s::GenericString, i::Integer) = codeunit(s.string, i)
 end
-const CodeUnits = @static V6_COMPAT ? Strs.CodeUnits : Base.CodeUnits
 
 # Should test GenericString also, once overthing else is working
 const UnicodeStringTypes = (String, UTF8Str, )

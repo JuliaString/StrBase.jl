@@ -9,20 +9,10 @@ Based partly on code in LegacyStrings that used to be part of Julia
 """
 module StrBase
 
-using StrAPI, CharSetEncodings, Chars
+using APITools
+@api init
 
-@import_list StrAPI base_api_ext base_dev_ext
-@using_list  StrAPI api_def dev_def
-@import_list StrAPI api_ext dev_ext
-@using_list  CharSetEncodings api_def dev_def
-@import_list CharSetEncodings api_ext
-@using_list  Chars api_def dev_def
-@import_list Chars api_ext dev_ext
-
-const api_ext = Symbol[]
-const api_def = Symbol[]
-const dev_ext = Symbol[]
-const dev_def = Symbol[]
+@api extend StrAPI, CharSetEncodings, Chars
 
 # Convenience aliases
 const SingleCU = SingleCodeUnitEncoding
@@ -31,14 +21,23 @@ const SCU = SingleCU()
 const MCU = MultiCU()
 
 # Convenience functions
-push!(api_ext, :str, :unsafe_str, :to_ascii, :utf8, :utf16, :utf32, :is_mutable, :index)
-push!(dev_def, :LineCounts, :CharTypes, :CharStat, :maxbit, :calcstats)
-push!(dev_def, :UTF_LONG, :UTF_LATIN1, :UTF_UNICODE2, :UTF_UNICODE3, :UTF_UNICODE4,
-      :UTF_SURROGATE, :UTF_INVALID, :check_continuation,
-      :_memcmp, :_memcpy, :_memset, :_fwd_memchr, :_rev_memchr)
-push!(dev_ext, :check_string, :unsafe_check_string, :fast_check_string, :skipascii, :skipbmp,
-      :countmask, :count_chars, :_count_mask_al, :_count_mask_ul, :count_latin,
-      :byte_string_classify, :_copysub, :_cvtsize, _repeat)
+
+@api public unsafe_str, to_ascii, utf8, utf16, utf32, is_mutable, index
+
+@api develop check_string, unsafe_check_string, fast_check_string, skipascii, skipbmp,
+             countmask, count_chars, _count_mask_al, _count_mask_ul, count_latin,
+             byte_string_classify, _copysub, _cvtsize, _repeat, empty_str, _data, _pnt64, _str,
+             ValidatedStyle, MutableStyle, EqualsStyle, CanContain
+
+@api define_develop LineCounts, CharTypes, CharStat, maxbit, calcstats,
+                    UTF_LONG, UTF_LATIN1, UTF_UNICODE2, UTF_UNICODE3, UTF_UNICODE4,
+                    UTF_SURROGATE, UTF_INVALID, check_continuation,
+                    _memcmp, _memcpy, _memset, _fwd_memchr, _rev_memchr,
+                    empty_string, _calcpnt, _mask_bytes, _allocate,
+                    MS_UTF8, MS_UTF16, MS_UTF32, MS_SubUTF32, MS_Latin, MS_ByteStr, MS_RawUTF8,
+                    _wrap_substr, _empty_sub, CHUNKSZ, CHUNKMSK,
+                    AccessType, UInt16_U, UInt32_U, UInt16_S, UInt32_S, UInt16_US, UInt32_US,
+                    alignedtype, swappedtype
 
 using Base: @_inline_meta, @propagate_inbounds, @_propagate_inbounds_meta, RefValue
 
@@ -70,5 +69,7 @@ include("util.jl")
 include("io.jl")
 include("murmurhash3.jl")
 include("hash.jl")
+
+@api freeze
 
 end # module StrBase

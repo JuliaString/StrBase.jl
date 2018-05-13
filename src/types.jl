@@ -20,10 +20,10 @@ struct Str{T,SubStr,Cache,Hash} <: AbstractString
         new{T,S,C,H}(v,s,c,h)
 end
 
+@api define_public Str
+
 (::Type{Str})(::Type{C}, v::String) where {C<:CSE} = Str(C, v, nothing, nothing, nothing)
 (::Type{Str})(::Type{C}, v::Str) where {C<:CSE} = Str(C, v.data, nothing, nothing, nothing)
-
-push!(api_def, :Str)
 
 # Handle change from endof -> lastindex
 @static if !isdefined(Base, :lastindex)
@@ -52,12 +52,12 @@ for lst in cse_info
     low = lowercase(str)
     if str[1] == '_'
         @eval empty_str(::Type{$cse}) = $(symstr("empty", low))
-        push!(dev_def, sym)
+        @eval @api define_develop $sym
     else
         emp = symstr("empty_", low)
         @eval const $emp = Str($cse, empty_string)
         @eval empty_str(::Type{$cse}) = $emp
-        push!(api_def, sym)
+        @eval @api define_public $sym
     end
     @eval convert(::Type{$sym}, str::$sym) = str
 end
@@ -67,16 +67,11 @@ empty_str(::Type{String}) = empty_string
 typemin(::Type{T}) where {T<:Str} = empty_str(T)
 typemin(::T) where {T<:Str} = empty_str(T)
 
-push!(api_def, :UniStr)
-push!(dev_def, :empty_string, :_calcpnt, :_mask_bytes, :_allocate, :CodePoints, :codepoints)
-push!(dev_def, :MS_UTF8, :MS_UTF16, :MS_UTF32, :MS_SubUTF32, :MS_Latin, :MS_ByteStr, :MS_RawUTF8)
-push!(dev_def, :_wrap_substr, :_empty_sub, :CHUNKSZ, :CHUNKMSK)
-push!(dev_ext, :empty_str, :_data, :_pnt64)
-
-
 """Union type for fast dispatching"""
 const UniStr = Union{ASCIIStr, _LatinStr, _UCS2Str, _UTF32Str}
 show(io::IO, ::Type{UniStr}) = print(io, :UniStr)
+
+@api define_public UniStr
 
 # Display BinaryCSE as if String
 show(io::IO, str::T) where {T<:Str{BinaryCSE}} = show(io, str.data)
@@ -160,31 +155,3 @@ pointer(str::Str, pos::Integer) = bytoff(pointer(str), pos - 1)
 # pointer conversions of SubString of ASCII/UTF8/UTF16/UTF32:
 pointer(x::SubString{<:Str}) = bytoff(pointer(x.string), x.offset)
 pointer(x::SubString{<:Str}, pos::Integer) = bytoff(pointer(x.string), x.offset + pos - 1)
-
-# CodePoints iterator
-
-struct CodePoints{T}
-    xs::T
-end
-
-"""
-    codepoints(str)
-
-An iterator that generates the code points of a string
-
-# Examples
-```jldoctest
-julia> a = Str("abc\U1f596")
-
-julia> collect(a)
-
-julia> collect(codepoints(a))
-```
-"""
-codepoints(xs) = CodePoints(xs)
-eltype(::Type{<:CodePoints{S}}) where {S} = eltype(S)
-length(it::CodePoints) = length(it.xs)
-start(it::CodePoints) = start(it.xs)
-done(it::CodePoints, state) = done(it.xs, state)
-@propagate_inbounds next(it::CodePoints{T}, state) where {T<:Str} =
-    _next(CodePointStyle(T), eltype(T), it.xs, state)

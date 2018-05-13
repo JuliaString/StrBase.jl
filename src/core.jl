@@ -24,7 +24,7 @@ end
 
 _nextcpfun(::SingleCU, ::Type{S}, pnt::Ptr{T}) where {S,T<:CodeUnitTypes} =
     get_codeunit(pnt), pnt + sizeof(T)
-_nextcp(::Type{T}, pnt) where {T} = _nextcpfun(CodePointStyle(T), T, pnt)
+_nextcp(::Type{T}, pnt) where {T} = _nextcpfun(EncodingStyle(T), T, pnt)
 
 @propagate_inbounds _getindex(::MultiCU, T, str, pos::Int) =
     first(_next(MultiCU(), T, str, pos))
@@ -47,7 +47,7 @@ _nextcp(::Type{T}, pnt) where {T} = _nextcpfun(CodePointStyle(T), T, pnt)
 @inline _length(::MultiCU, str::Str{RawUTF8CSE}) = length(str.data)
 @inline _length(::MultiCU, str::Str{RawUTF8CSE}, i::Int, j::Int) = length(str.data, i, j)
 
-@propagate_inbounds function _length(cs::CodePointStyle, str, i::Int, j::Int)
+@propagate_inbounds function _length(cs::EncodingStyle, str, i::Int, j::Int)
     @boundscheck begin
         # I think the bounds of these should be 1:siz
         lim = ncodeunits(str)+1
@@ -60,7 +60,7 @@ end
 
 @inline _thisind(::SingleCU, str, len, pnt, pos) = Int(pos)
 
-@propagate_inbounds function _thisind(cs::CS, str, pos) where {CS<:CodePointStyle}
+@propagate_inbounds function _thisind(cs::CS, str, pos) where {CS<:EncodingStyle}
     @_inline_meta()
     # I do think thisind should not return anything outside of the valid range
     # but for now, to make it compatible with the current String API, do this:
@@ -97,46 +97,46 @@ end
     min(Int(i) + nchar, ncodeunits(str)+1)
 end
 
-_index(cs::CodePointStyle, str, i)               = _thisind(cs, str, i)
-_index(cs::CodePointStyle, ::Fwd, str, i)        = _nextind(cs, str, i)
-_index(cs::CodePointStyle, ::Fwd, str, i, nchar) = _nextind(cs, str, i, nchar)
-_index(cs::CodePointStyle, ::Rev, str, i)        = _prevind(cs, str, i)
-_index(cs::CodePointStyle, ::Rev, str, i, nchar) = _prevind(cs, str, i, nchar)
+_index(cs::EncodingStyle, str, i)               = _thisind(cs, str, i)
+_index(cs::EncodingStyle, ::Fwd, str, i)        = _nextind(cs, str, i)
+_index(cs::EncodingStyle, ::Fwd, str, i, nchar) = _nextind(cs, str, i, nchar)
+_index(cs::EncodingStyle, ::Rev, str, i)        = _prevind(cs, str, i)
+_index(cs::EncodingStyle, ::Rev, str, i, nchar) = _prevind(cs, str, i, nchar)
 
 #  Call to specialized version via trait
 @propagate_inbounds lastindex(str::MaybeSub{T}) where {T<:Str} =
-    (@_inline_meta(); _lastindex(CodePointStyle(T), str))
+    (@_inline_meta(); _lastindex(EncodingStyle(T), str))
 @propagate_inbounds getindex(str::MaybeSub{T}, i::Int) where {T<:Str} =
-    (@_inline_meta(); R = eltype(T) ; _getindex(CodePointStyle(T), R, str, i)::R)
+    (@_inline_meta(); R = eltype(T) ; _getindex(EncodingStyle(T), R, str, i)::R)
 @propagate_inbounds next(str::T, i::Int) where {T<:Str} =
-    (@_inline_meta(); R = eltype(T) ; _next(CodePointStyle(T), R, str, i)::Tuple{R,Int})
+    (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
 @propagate_inbounds next(str::SubString{T}, i::Int) where {T<:Str} =
-    (@_inline_meta(); R = eltype(T) ; _next(CodePointStyle(T), R, str, i)::Tuple{R,Int})
+    (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
 @propagate_inbounds length(str::MaybeSub{T}) where {T<:Str} =
-    (@_inline_meta(); _length(CodePointStyle(T), str))
+    (@_inline_meta(); _length(EncodingStyle(T), str))
 @propagate_inbounds length(str::MaybeSub{T}, i::Int, j::Int) where {T<:Str} =
-    (@_inline_meta(); _length(CodePointStyle(T), str, i, j))
+    (@_inline_meta(); _length(EncodingStyle(T), str, i, j))
 @propagate_inbounds thisind(str::MaybeSub{T}, i::Int) where {T<:Str} =
-    (@_inline_meta(); _thisind(CodePointStyle(T), str, i))
+    (@_inline_meta(); _thisind(EncodingStyle(T), str, i))
 @propagate_inbounds prevind(str::MaybeSub{T}, i::Int) where {T<:Str} =
-    (@_inline_meta(); _prevind(CodePointStyle(T), str, i))
+    (@_inline_meta(); _prevind(EncodingStyle(T), str, i))
 @propagate_inbounds nextind(str::MaybeSub{T}, i::Int) where {T<:Str} =
-    (@_inline_meta(); _nextind(CodePointStyle(T), str, i))
+    (@_inline_meta(); _nextind(EncodingStyle(T), str, i))
 @propagate_inbounds prevind(str::MaybeSub{T}, i::Int, nchar::Int) where {T<:Str} =
-    (@_inline_meta(); _prevind(CodePointStyle(T), str, i, nchar))
+    (@_inline_meta(); _prevind(EncodingStyle(T), str, i, nchar))
 @propagate_inbounds nextind(str::MaybeSub{T}, i::Int, nchar::Int) where {T<:Str} =
-    (@_inline_meta(); _nextind(CodePointStyle(T), str, i, nchar))
+    (@_inline_meta(); _nextind(EncodingStyle(T), str, i, nchar))
 
 @propagate_inbounds index(str::MaybeSub{T}, i::Integer) where {T<:Str} =
-    (@_inline_meta(); _index(CodePointStyle(T), str, Int(i)))
+    (@_inline_meta(); _index(EncodingStyle(T), str, Int(i)))
 @propagate_inbounds index(::D, str::MaybeSub{T}, i::Integer) where {T<:Str,D<:Direction} =
-    (@_inline_meta(); _index(CodePointStyle(T), D(), str, Int(i)))
+    (@_inline_meta(); _index(EncodingStyle(T), D(), str, Int(i)))
 @propagate_inbounds index(::D, str::MaybeSub{T}, i::Integer,
                           nchar::Integer) where {T<:Str,D<:Direction} =
-    (@_inline_meta(); _index(CodePointStyle(T), D(), str, Int(i), Int(nchar)))
+    (@_inline_meta(); _index(EncodingStyle(T), D(), str, Int(i), Int(nchar)))
 
 @propagate_inbounds reverseind(str::MaybeSub{T}, i::Integer) where {T<:Str} =
-    (@_inline_meta(); _index(CodePointStyle(T), str, Int(ncodeunits(str) - i + 1)))
+    (@_inline_meta(); _index(EncodingStyle(T), str, Int(ncodeunits(str) - i + 1)))
 
 @static if V6_COMPAT
     @propagate_inbounds ind2chr(str::MaybeSub{T}, i::Int) where {T<:Str} = length(str, 1, i)
@@ -146,7 +146,7 @@ end
 @propagate_inbounds function is_valid(str::MaybeSub{T}, i::Integer) where {T<:Str}
     @_inline_meta()
     @boundscheck 1 <= i <= ncodeunits(str) || return false
-    _isvalid_char_pos(CodePointStyle(T), cse(T), str, i)
+    _isvalid_char_pos(EncodingStyle(T), cse(T), str, i)
 end
 
 _isvalid_char_pos(::SingleCU, C, str, i) = true
@@ -195,14 +195,14 @@ function map(fun, str::MaybeSub{T}) where {C<:CSE, T<:Str{C}}
 end
 
 @propagate_inbounds collect(str::MaybeSub{T}) where {T<:Str} =
-    @preserve str _collectstr(CodePointStyle(T), eltype(T), str)
+    @preserve str _collectstr(EncodingStyle(T), eltype(T), str)
 
 # An optimization here would be to check just if they are the same type, but
 # rather if they are the same size with a compatible encoding, i.e. like
 # UTF32Chr and UInt32, but not Char and UInt32.
 
 @propagate_inbounds Base._collect(::Type{S}, str::T, isz::Base.HasLength) where {S,T<:Str} =
-    _collectstr(CodePointStyle(T), S, str)
+    _collectstr(EncodingStyle(T), S, str)
 
 @inline function check_valid(ch, pos)
     is_surrogate_codeunit(ch) && unierror(UTF_ERR_SURROGATE, pos, ch)
@@ -279,4 +279,4 @@ function _reverse(::MultiCU, ::Type{C}, len, str) where {C<:CSE}
 end
 
 reverse(str::MaybeSub{T}) where {C<:CSE,T<:Str{C}} =
-    _reverse(CodePointStyle(T), C, ncodeunits(str), str)
+    _reverse(EncodingStyle(T), C, ncodeunits(str), str)

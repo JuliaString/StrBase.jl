@@ -71,13 +71,13 @@ mutable struct CharStr <: AbstractString
     chars::Vector{Char}
     CharStr(x) = new(collect(x))
 end
-Base.start(x::CharStr) = start(x.chars)
-Base.next(x::CharStr, i::Int) = next(x.chars, i)
-Base.done(x::CharStr, i::Int) = done(x.chars, i)
+start(x::CharStr) = start(x.chars)
+next(x::CharStr, i::Int) = next(x.chars, i)
+done(x::CharStr, i::Int) = done(x.chars, i)
 
-Strs.lastindex(x::CharStr) = lastindex(x.chars)
-Strs.ncodeunits(x::CharStr) = lastindex(x.chars)
-Strs.codeunit(x::CharStr) = Char
+lastindex(x::CharStr) = lastindex(x.chars)
+ncodeunits(x::CharStr) = lastindex(x.chars)
+codeunit(x::CharStr) = Char
 
 function testbasic(::Type{ST}, ::Type{C}) where {ST, C}
     emptystr = ST("")
@@ -264,7 +264,7 @@ end
     @test get(utf8_str, 1000, cvtchar(C,'X')) == 'X'
 
     # Test that indexing into the middle of a character throws
-    @test_throws IndexError get(utf8_str, 2, cvtchar(C,'X'))
+    @test_throws StringIndexError get(utf8_str, 2, cvtchar(C,'X'))
 end
 end
 
@@ -285,7 +285,7 @@ let
     @static if V6_COMPAT
         @test_throws UnicodeError srep[8]
     else
-        @test_throws IndexError srep[8]
+        @test_throws StringIndexError srep[8]
     end
 end
 
@@ -294,7 +294,7 @@ let s = ST("x\u0302")
     @test s[1:2] == s
     @test_throws BoundsError s[0:3]
     @test_throws BoundsError s[1:4]
-    V6_COMPAT || @test_throws IndexError s[1:3]
+    V6_COMPAT || @test_throws StringIndexError s[1:3]
 end
 
 @testset "issue #9781" begin
@@ -334,7 +334,7 @@ end
     @test gstr[[1]] == "1"
 
     @test s"∀∃"[big(1)] == '∀'
-    @test_throws IndexError GenericString("∀∃")[Int8(2)]
+    @test_throws StringIndexError GenericString("∀∃")[Int8(2)]
     @test_throws BoundsError GenericString("∀∃")[UInt16(10)]
 
     foobar = ST("foobar")
@@ -617,7 +617,7 @@ end
     end
 end
 
-@testset "repeat characters" for C in AllCharTypes
+@testset "repeat characters" begin
     maxch = Char(typemax(C))
     @test repeat(C('x'),6) == "xxxxxx"
     'α' > maxch || @test repeat(C('α'),6) == "αααααα"
@@ -811,22 +811,22 @@ end
         s = convert(T, ST("∀x∃"))
         @test nextind(s, 0, 0) == 0
         @test nextind(s, 1, 0) == 1
-        @test_throws IndexError nextind(s, 2, 0)
-        @test_throws IndexError nextind(s, 3, 0)
+        @test_throws StringIndexError nextind(s, 2, 0)
+        @test_throws StringIndexError nextind(s, 3, 0)
         @test nextind(s, 4, 0) == 4
         @test nextind(s, 5, 0) == 5
-        @test_throws IndexError nextind(s, 6, 0)
-        @test_throws IndexError nextind(s, 7, 0)
+        @test_throws StringIndexError nextind(s, 6, 0)
+        @test_throws StringIndexError nextind(s, 7, 0)
         @test_throws BoundsError nextind(s, 8, 0)
 
         @test_throws BoundsError prevind(s, 0, 0)
         @test prevind(s, 1, 0) == 1
-        @test_throws IndexError prevind(s, 2, 0)
-        @test_throws IndexError prevind(s, 3, 0)
+        @test_throws StringIndexError prevind(s, 2, 0)
+        @test_throws StringIndexError prevind(s, 3, 0)
         @test prevind(s, 4, 0) == 4
         @test prevind(s, 5, 0) == 5
-        @test_throws IndexError prevind(s, 6, 0)
-        @test_throws IndexError prevind(s, 7, 0)
+        @test_throws StringIndexError prevind(s, 6, 0)
+        @test_throws StringIndexError prevind(s, 7, 0)
         @test prevind(s, 8, 0) == 8
     end
 end

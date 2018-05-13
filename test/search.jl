@@ -172,9 +172,9 @@ end
                 end
             end
             @testset "Index Error" begin
-                @test_throws IndexError fnd(Fwd, cvtchar(C, '∀'), str, 2)
-                @test_throws IndexError fnd(Fwd, cvtchar(C, '∃'), str, 15)
-                @test_throws IndexError fnd(Fwd, cvtchar(C, 'δ'), str, 18)
+                @test_throws StringIndexError fnd(Fwd, cvtchar(C, '∀'), str, 2)
+                @test_throws StringIndexError fnd(Fwd, cvtchar(C, '∃'), str, 15)
+                @test_throws StringIndexError fnd(Fwd, cvtchar(C, 'δ'), str, 18)
             end
 
             @testset "find(First, ==(chr),..." begin

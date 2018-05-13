@@ -29,7 +29,7 @@ is_valid(str::T) where {T<:Str}       = _isvalid(ValidatedStyle(T), str)
 
 `MutableStyle` specifies the whether a string type is mutable or not
 
-    Strs.MutableStyle(::Type{<:MyString}) = MutableStr()
+    MutableStyle(::Type{<:MyString}) = MutableStr()
 
 The default is `ImmutableStr`
 """
@@ -53,7 +53,7 @@ isimmutable(str::T) where {T<:Str} = !is_mutable(T)
 `CanContainStyle` specifies whether the first string can contain a substring of the second type,
     and if so, what is the most efficient method of comparison
 
-    Strs.CanContain(::Type{<:MyString}, ::Type{String}) = ByteCompare()
+    CanContain(::Type{<:MyString}, ::Type{String}) = ByteCompare()
 
 Returns an instance of type `CompareStyle`, default `CodePointCompare`
 """
@@ -120,7 +120,7 @@ CanContain(A::AbstractString, B::AbstractString) = CanContain(typeof(A), typeof(
 `EqualsStyle` specifies whether the first string can equal a substring of the second type,
     and if so, what is the most efficient method of comparison
 
-This is determined by the Strs.CanContain trait
+This is determined by the CanContain trait
 Returns an instance of type `CompareStyle`, default `CodePointCompare`
 """
 EqualsStyle(::Type{S}, ::Type{T}) where {S<:CSE,T<:CSE} =

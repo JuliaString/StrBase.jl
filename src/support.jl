@@ -707,7 +707,7 @@ const Chrs = @static V6_COMPAT ? Union{Char,AbstractChar} : Chr
 
 function repeat(ch::CP, cnt::Integer) where {CP <: Chrs}
     C = codepoint_cse(CP)
-    cnt > 1 && return Str(C, _repeat(CodePointStyle(C), C, codepoint(ch), cnt))
+    cnt > 1 && return Str(C, _repeat(EncodingStyle(C), C, codepoint(ch), cnt))
     cnt < 0 && repeaterr(cnt)
     cnt == 0 ? empty_str(C) : _convert(C, codepoint(ch))
 end

@@ -363,13 +363,6 @@ _next(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) where {
 
 done(str::Str{<:UTF8_CSEs}, i::Int) = i > sizeof(str.data)
 
-length(it::CodePoints{<:AbstractString}, i::Int) = length(it.xs)
-
-@propagate_inbounds function next(it::CodePoints{<:AbstractString}, state)
-    ch, state = next(it.xs, state)
-    UTF32Chr(ch%UInt32), state
-end
-
 ## overload methods for efficiency ##
 
 @inline _isvalid_char_pos(::MultiCU, ::Type{<:UTF8_CSEs}, str, pos::Integer) =

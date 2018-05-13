@@ -37,8 +37,8 @@ function testuni(T)
 
     # Substring provided with invalid end index throws BoundsError
     if !V6_COMPAT
-        @test_throws IndexError  SubString(s1, 1, 2)
-        @test_throws IndexError  SubString(s1, 1, 3)
+        @test_throws StringIndexError  SubString(s1, 1, 2)
+        @test_throws StringIndexError  SubString(s1, 1, 3)
         @test_throws BoundsError SubString(s1, 1, 4)
 
         # Substring provided with invalid start index throws BoundsError
@@ -46,9 +46,9 @@ function testuni(T)
         @test SubString(s2, 1, 4) == s2
         @test SubString(s2, 4, 4) == s1
 
-        @test_throws IndexError  SubString(s2, 1, 2)
-        @test_throws IndexError  SubString(s2, 1, 5)
-        @test_throws IndexError  SubString(s2, 2, 4)
+        @test_throws StringIndexError  SubString(s2, 1, 2)
+        @test_throws StringIndexError  SubString(s2, 1, 5)
+        @test_throws StringIndexError  SubString(s2, 2, 4)
         @test_throws BoundsError SubString(s2, 0, 1)
         @test_throws BoundsError SubString(s2, 0, 4)
         @test_throws BoundsError SubString(s2, 1, 7)
@@ -65,7 +65,7 @@ function testuni(T)
     # index beyond lastindex(s2)
     if !V6_COMPAT
         for idx in [2:3; 5:6]
-            @test_throws IndexError SubString(s2, 1, idx)
+            @test_throws StringIndexError SubString(s2, 1, idx)
         end
         for idx in 7:8
             @test_throws BoundsError SubString(s2, 1, idx)
@@ -79,7 +79,7 @@ function testuni(T)
     write(b, u)
     @test String(take!(b)) == "\u2200\u2222"
 
-    V6_COMPAT || @test_throws IndexError SubString(str, 4, 5)
+    V6_COMPAT || @test_throws StringIndexError SubString(str, 4, 5)
     @test_throws BoundsError next(u, 0)
     @test_throws BoundsError next(u, 7)
     @test_throws BoundsError getindex(u, 0)
@@ -159,7 +159,7 @@ function testuni(T)
                     @test is_valid(ss, j) == is_valid(s, j)
                 end
             else
-                V6_COMPAT || @test_throws IndexError SubString(s, 1, i)
+                V6_COMPAT || @test_throws StringIndexError SubString(s, 1, i)
             end
         elseif i > 0
             V6_COMPAT || @test_throws BoundsError SubString(s, 1, i)

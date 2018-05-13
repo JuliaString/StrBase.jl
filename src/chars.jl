@@ -24,8 +24,6 @@ eltype(::Type{<:Str{_LatinCSE}})      = _LatinChr
 eltype(::Type{<:Str{<:Union{UCS2CSE, _UCS2CSE}}}) = UCS2Chr
 eltype(::Type{<:Str{<:Union{UTF8CSE, UTF16CSE, UTF32_CSEs}}}) = UTF32Chr
 
-codepoint_size(::Type{T}) where {T<:Union{String,Str}} = sizeof(eltype(T))
-
 get_codeunit(dat, pos) = codeunit(dat, pos)
 get_codeunit(pnt::Ptr{<:CodeUnitTypes}, pos) = unsafe_load(pnt, pos)
 get_codeunit(dat::AbstractArray{<:CodeUnitTypes}, pos) = dat[pos]
