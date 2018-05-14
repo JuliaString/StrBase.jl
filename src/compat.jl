@@ -103,3 +103,6 @@ function Base.length(s::String, i::Int, j::Int)
     c = j - i + (i == k)
     _length(s, i, j, c)
 end
+
+occurs_in(needle::String, str::String) = contains(str, needle)
+occurs_in(needle::Char,   str::String) = contains(str, string(needle))

@@ -46,9 +46,9 @@ function _normalize(::Type{T}, str::AbstractString;
                    lump::Bool        = false,
                    stripmark::Bool   = false,
                    ) where {T<:Str}
-    (compose & decompose) && unierror(UTF_ERR_DECOMPOSE_COMPOSE)
-    (!(compat | stripmark) & (compat | stripmark)) && unierror(UTF_ERR_COMPAT_STRIPMARK)
-    newline2ls + newline2ps + newline2lf > 1 && unierror(UTF_ERR_NL_CONVERSION)
+    (compose & decompose) && unierror(StrErrors.DECOMPOSE_COMPOSE)
+    (!(compat | stripmark) & (compat | stripmark)) && unierror(StrErrors.COMPAT_STRIPMARK)
+    newline2ls + newline2ps + newline2lf > 1 && unierror(StrErrors.NL_CONVERSION)
     flags =
         ifelse(stable,      Uni.STABLE, 0) |
         ifelse(compat,      Uni.COMPAT, 0) |
@@ -74,4 +74,4 @@ normalize(str::Str, nf::Symbol) =
                  nf == :NFD ? (Uni.STABLE | Uni.DECOMPOSE) :
                  nf == :NFKC ? (Uni.STABLE | Uni.COMPOSE | Uni.COMPAT) :
                  nf == :NFKD ? (Uni.STABLE | Uni.DECOMPOSE | Uni.COMPAT) :
-                 unierror(UTF_ERR_NORMALIZE, nf))
+                 unierror(StrErrors.NORMALIZE, nf))

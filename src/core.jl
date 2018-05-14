@@ -205,8 +205,8 @@ end
     _collectstr(EncodingStyle(T), S, str)
 
 @inline function check_valid(ch, pos)
-    is_surrogate_codeunit(ch) && unierror(UTF_ERR_SURROGATE, pos, ch)
-    ch <= 0x10ffff || unierror(UTF_ERR_INVALID, pos, ch)
+    is_surrogate_codeunit(ch) && unierror(StrErrors.SURROGATE, pos, ch)
+    ch <= 0x10ffff || unierror(StrErrors.INVALID, pos, ch)
     ch
 end
 
@@ -222,13 +222,13 @@ end
 # Todo: These should be made more generic, work for all SingleCU types
 
 convert(::Type{<:Str{ASCIICSE}}, ch::Unsigned) =
-    is_ascii(ch) ? _convert(ASCIICSE, ch%UInt8) : unierror(UTF_ERR_INVALID_ASCII, 0, ch)
+    is_ascii(ch) ? _convert(ASCIICSE, ch%UInt8) : unierror(StrErrors.INVALID_ASCII, 0, ch)
 convert(::Type{<:Str{LatinCSE}}, ch::Unsigned) =
-    is_latin(ch) ? _convert(LatinCSE, ch%UInt8) : unierror(UTF_ERR_INVALID_LATIN1, 0, ch)
+    is_latin(ch) ? _convert(LatinCSE, ch%UInt8) : unierror(StrErrors.INVALID_LATIN1, 0, ch)
 convert(::Type{<:Str{UCS2CSE}}, ch::Unsigned) =
-    is_bmp(ch) ? _convert(UCS2CSE, ch%UInt16) : unierror(UTF_ERR_INVALID, 0, ch)
+    is_bmp(ch) ? _convert(UCS2CSE, ch%UInt16) : unierror(StrErrors.INVALID, 0, ch)
 convert(::Type{<:Str{UTF32CSE}}, ch::Unsigned) =
-    is_unicode(ch) ? _convert(UTF32CSE, ch%UInt32) : unierror(UTF_ERR_INVALID, 0, ch)
+    is_unicode(ch) ? _convert(UTF32CSE, ch%UInt32) : unierror(StrErrors.INVALID, 0, ch)
 
 convert(::Type{T}, ch::Signed) where {T<:Str} = ch < 0 ? ncharerr(ch) : convert(T, ch%Unsigned)
 

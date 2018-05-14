@@ -475,12 +475,12 @@ end
     @preserve str begin
         pnt = pointer(str)
         ch = get_codeunit(pnt, beg)
-        is_valid_continuation(ch) && unierror(UTF_ERR_INVALID_INDEX, beg, ch)
+        is_valid_continuation(ch) && unierror(StrErrors.INVALID_INDEX, beg, ch)
         lst = last(rng)
         @boundscheck lst > len && boundserr(str, lst)
         if lst != len
             ch = get_codeunit(pnt, lst)
-            is_valid_continuation(ch) && unierror(UTF_ERR_INVALID_INDEX, lst, ch)
+            is_valid_continuation(ch) && unierror(StrErrors.INVALID_INDEX, lst, ch)
         end
     end
     SubString(str, beg, lst)
@@ -598,7 +598,7 @@ function convert(::Type{<:Str{UTF8CSE}}, ch::Unsigned)
         buf = _allocate(2)
         @inbounds buf[1], buf[2] = get_utf8_2(ch)
     elseif ch - 0xd800 < 0x800
-        unierror(UTF_ERR_INVALID, 0, ch)
+        unierror(StrErrors.INVALID, 0, ch)
     elseif ch <= 0xffff
         buf = _allocate(3)
         @inbounds buf[1], buf[2], buf[3] = get_utf8_3(ch)
@@ -606,7 +606,7 @@ function convert(::Type{<:Str{UTF8CSE}}, ch::Unsigned)
         buf = _allocate(4)
         @inbounds buf[1], buf[2], buf[3], buf[4] = get_utf8_4(ch)
     else
-        unierror(UTF_ERR_INVALID, 0, ch)
+        unierror(StrErrors.INVALID, 0, ch)
     end
     Str(UTF8CSE, buf)
 end

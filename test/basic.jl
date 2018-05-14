@@ -951,7 +951,7 @@ end
 @testset "Unicode Strings" begin
     # Unicode errors
     let io = IOBuffer()
-        show(io, UnicodeError(UTF_ERR_SHORT, 1, 10))
+        show(io, UnicodeError(StrErrors.SHORT, 1, 10))
         check = "UnicodeError: invalid UTF-8 sequence starting at index 1 (0xa) missing one or more continuation bytes"
         @test String(take!(io)) == check
     end

@@ -34,22 +34,22 @@ function convert(::Type{<:Str{ASCIICSE}}, str::AbstractString)
     len = length(str)
     buf, pnt = _allocate(UInt8, len)
     @inbounds for ch in str
-        is_ascii(ch) || unierror(UTF_ERR_INVALID_ASCII, pnt - pointer(buf) + 1, ch)
+        is_ascii(ch) || unierror(StrErrors.INVALID_ASCII, pnt - pointer(buf) + 1, ch)
         set_codeunit!(pnt, ch%UInt8)
         pnt += 1
     end
     Str(ASCIICSE, buf)
 end
 
-convert(::Type{<:Str{ASCIICSE}}, str::Str{<:SubSet_CSEs}) = unierror(UTF_ERR_INVALID_ASCII)
+convert(::Type{<:Str{ASCIICSE}}, str::Str{<:SubSet_CSEs}) = unierror(StrErrors.INVALID_ASCII)
 
 convert(::Type{<:Str{ASCIICSE}}, str::Str{<:Union{Text1CSE,BinaryCSE,LatinCSE,UTF8CSE}}) =
     (is_empty(str) ? empty_ascii
-     : is_ascii(str) ? Str(ASCIICSE, str.data) : unierror(UTF_ERR_INVALID_ASCII))
+     : is_ascii(str) ? Str(ASCIICSE, str.data) : unierror(StrErrors.INVALID_ASCII))
 
 function convert(::Type{<:Str{ASCIICSE}}, dat::Vector{UInt8})
     is_empty(dat) && return empty_ascii
-    is_ascii(dat) || unierror(UTF_ERR_INVALID_ASCII)
+    is_ascii(dat) || unierror(StrErrors.INVALID_ASCII)
     siz = sizeof(dat)
     buf = _allocate(siz)
     @preserve dat unsafe_copyto!(pointer(buf), pointer(dat), siz)
@@ -59,7 +59,7 @@ end
 function convert(::Type{<:Str{ASCIICSE}}, str::SubString{T}) where
     {T<:Union{String, Str{<:Union{Binary_CSEs,LatinCSE,UTF8CSE}}}}
     is_empty(str) && return empty_ascii
-    is_ascii(str) || unierror(UTF_ERR_INVALID_ASCII)
+    is_ascii(str) || unierror(StrErrors.INVALID_ASCII)
     @preserve str begin
         len = ncodeunits(str)
         buf, out = _allocate(UInt8, len)
@@ -70,7 +70,7 @@ end
 
 convert(::Type{<:Str{ASCIICSE}}, str::String) =
     (isempty(str) ? empty_ascii
-     : is_ascii(str) ? Str(ASCIICSE, str) : unierror(UTF_ERR_INVALID_ASCII))
+     : is_ascii(str) ? Str(ASCIICSE, str) : unierror(StrErrors.INVALID_ASCII))
 
 
 # TODO: allow transform as the first argument to replace?
