@@ -653,8 +653,8 @@ end
 
 @static if !V6_COMPAT
 @testset "unrecognized escapes in string/char literals" begin
-    @test_throws Meta.ParseError Meta.parse(ST("\"\\.\""))
-    @test_throws Meta.ParseError Meta.parse(ST("\'\\.\'"))
+    @test_throws Meta.ParseError parse(Expr, ST("\"\\.\""))
+    @test_throws Meta.ParseError parse(Expr, ST("\'\\.\'"))
 end
 
 @testset "thisind" begin
