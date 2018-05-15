@@ -98,8 +98,8 @@ utf_length(::Type{UTF16CSE}, b, e) =
 function convert(::Type{<:Str{C}}, rng::UnitRange{<:CodeUnitTypes}) where {C<:CSE}
     isempty(rng) && return empty_str(C)
     b, e = rng.start, rng.stop
-    isvalid(C, b) || unierror(StrErrors.INVALID, 1, b)
-    isvalid(C, e) || unierror(StrErrors.INVALID, length(rng), e)
+    isvalid(C, b) || strerror(StrErrors.INVALID, 1, b)
+    isvalid(C, e) || strerror(StrErrors.INVALID, length(rng), e)
     # Need to calculate allocation length
     Str(C, _str_cpy(C, rng, Int(e - b) + 1))
 end
@@ -108,20 +108,20 @@ function convert(::Type{<:Str{C}}, rng::UnitRange{<:CodeUnitTypes}
                  ) where {C<:Union{ASCIICSE,Latin_CSEs,UCS2_CSEs,UTF32_CSEs}}
     isempty(rng) && return empty_str(C)
     b, e = rng.start, rng.stop
-    isvalid(C, b) || unierror(StrErrors.INVALID, 1, b)
-    isvalid(C, e) || unierror(StrErrors.INVALID, length(rng), e)
+    isvalid(C, b) || strerror(StrErrors.INVALID, 1, b)
+    isvalid(C, e) || strerror(StrErrors.INVALID, length(rng), e)
     # If contains range 0xd800-0xdfff, then also invalid
-    isempty(intersect(b%UInt32:e%UInt32, 0xd800:0xdfff)) || unierror(StrErrors.INVALID, 0, rng)
+    isempty(intersect(b%UInt32:e%UInt32, 0xd800:0xdfff)) || strerror(StrErrors.INVALID, 0, rng)
     Str(C, _str_cpy(C, rng, Int(e - b) + 1))
 end
 
 function convert(::Type{<:Str{C}}, rng::UnitRange{T}) where {C<:CSE,T<:AbstractChar}
     isempty(rng) && return empty_str(C)
     b, e = rng.start, rng.stop
-    isvalid(C, b) || unierror(StrErrors.INVALID, 1, b)
-    isvalid(C, e) || unierror(StrErrors.INVALID, length(rng), e)
+    isvalid(C, b) || strerror(StrErrors.INVALID, 1, b)
+    isvalid(C, e) || strerror(StrErrors.INVALID, length(rng), e)
     # If contains range 0xd800-0xdfff, then also invalid
-    isempty(intersect(b%UInt32:e%UInt32, 0xd800:0xdfff)) || unierror(StrErrors.INVALID, 0, rng)
+    isempty(intersect(b%UInt32:e%UInt32, 0xd800:0xdfff)) || strerror(StrErrors.INVALID, 0, rng)
     # get counts in range
     Str(C, _str_cpy(C, rng, utf_length(C, b%UInt32, e%UInt32)))
 end
@@ -130,10 +130,10 @@ function convert(::Type{<:Str{C}}, rng::UnitRange{<:CodeUnitTypes}
                  ) where {C<:Union{UTF8CSE,UTF16CSE}}
     isempty(rng) && return empty_str(C)
     b, e = rng.start, rng.stop
-    isvalid(C, b) || unierror(StrErrors.INVALID, 1, b)
-    isvalid(C, e) || unierror(StrErrors.INVALID, length(rng), e)
+    isvalid(C, b) || strerror(StrErrors.INVALID, 1, b)
+    isvalid(C, e) || strerror(StrErrors.INVALID, length(rng), e)
     # If contains range 0xd800-0xdfff, then also invalid
-    isempty(intersect(b%UInt32:e%UInt32, 0xd800:0xdfff)) || unierror(StrErrors.INVALID, 0, rng)
+    isempty(intersect(b%UInt32:e%UInt32, 0xd800:0xdfff)) || strerror(StrErrors.INVALID, 0, rng)
     len = utf_length(C, b%UInt32, e%UInt32)
     buf, out = allocate(codeunit(T), len)
     if C === UTF8CSE
@@ -191,7 +191,7 @@ convert(::Type{UniStr}, str::Str{<:Union{ASCIICSE,SubSet_CSEs}}) = str
 
 function convert(::Type{T},
                  vec::AbstractArray{UInt8}) where {C<:Union{UTF8CSE,ASCIICSE},T<:Str{C}}
-    is_valid(T, vec) || unierror(StrErrors.INVALID)
+    is_valid(T, vec) || strerror(StrErrors.INVALID)
     Str(C, _str_cpy(UInt8, vec, length(vec)))
 end
 

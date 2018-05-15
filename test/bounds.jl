@@ -6,11 +6,11 @@ let b1 = codeunits("abcdef")
     @test_throws BoundsError check_string(b1, 3, -10)
     @test_throws BoundsError check_string(b1, 3, 0)
     @test_throws BoundsError check_string(b1, 3, 7)
-    @test_throws UnicodeError check_string(b1, 3, 1)
+    @test_throws StringError check_string(b1, 3, 1)
 end
 
 let str = UTF8Str("this is a test\uff")
-    @test_throws UnicodeError UTF8Str(vcat(codeunits("this is a test"), [0xed, 0x80]))
+    @test_throws StringError UTF8Str(vcat(codeunits("this is a test"), [0xed, 0x80]))
     # This next test was broken by #24999
     #@test next(str, 15) == ('\ufffd', 16)
     @test_throws BoundsError getindex(str, 0:3)

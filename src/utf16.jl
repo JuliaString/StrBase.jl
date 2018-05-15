@@ -228,19 +228,19 @@ end
 convert(::Type{<:Str{C}}, ch::Unsigned) where {C<:UTF16CSE} =
     (is_unicode(ch)
      ? (ch <= 0xffff ? _convert(UTF16CSE, ch%UInt16) : _convert_utf_n(C, ch%UInt32))
-     : unierror(StrErrors.INVALID, 0, ch))
+     : strerror(StrErrors.INVALID, 0, ch))
 
 # Type _UCS2CSE must have at least 1 character > 0xff, so use other types as well
 convert(::Type{<:Str{_UCS2CSE}}, ch::Unsigned) =
     (ch > 0xff
-     ? (is_bmp(ch) ? _convert(_UCS2CSE, ch%UInt16) : unierror(StrErrors.INVALID, 0, ch))
+     ? (is_bmp(ch) ? _convert(_UCS2CSE, ch%UInt16) : strerror(StrErrors.INVALID, 0, ch))
      : _convert(_LatinCSE, ch%UInt8))
 
 function convert(::Type{<:Str{C}}, str::AbstractString) where {C<:UCS2_CSEs}
     is_empty(str) && return empty_str(C)
     # Might want to have an invalids_as argument
     len, flags, num4byte, num3byte = unsafe_check_string(str)
-    num4byte == 0 || unierror(StrErrors.INVALID_UCS2)
+    num4byte == 0 || strerror(StrErrors.INVALID_UCS2)
     buf, pnt = _allocate(UInt16, len)
     @inbounds for ch in str
         set_codeunit!(pnt, ch%UInt16)
@@ -257,7 +257,7 @@ function convert(::Type{<:Str{C}}, str::MS_RawUTF8) where {C<:UCS2_CSEs}
         pnt = pointer(str)
         # Check that is correct UTF-8 encoding and get number of words needed
         len, flags, num4byte, num3byte = fast_check_string(pnt, siz)
-        num4byte == 0 || unierror(StrErrors.INVALID_UCS2)
+        num4byte == 0 || strerror(StrErrors.INVALID_UCS2)
         # Optimize case where no characters > 0x7f
         Str((C === _UCS2CSE && num3byte != 0) ? _UCS2CSE : UCS2CSE,
             flags == 0 ? _cvtsize(UInt16, pnt, len) : _encode_utf16(pnt, len))
@@ -276,7 +276,7 @@ function convert(::Type{<:Str{C}}, str::MS_UTF16) where {C<:UCS2_CSEs}
     # handle zero length string quickly
     (siz = sizeof(str)) == 0 && return empty_str(C)
     # Check if conversion is valid
-    is_bmp(str) || unierror(StrErrors.INVALID_UCS2)
+    is_bmp(str) || strerror(StrErrors.INVALID_UCS2)
     @preserve str Str(C, _cvtsize(UInt16, pointer(str), len))
 end
 
@@ -486,7 +486,7 @@ function convert(::Type{<:Str{C}},
     @preserve str begin
         pnt = pointer(str)
         len, flags, num4byte, num3byte, num2byte, latin1byte = fast_check_string(pnt, len)
-        num4byte == 0 || unierror(StrErrors.INVALID_UCS2)
+        num4byte == 0 || strerror(StrErrors.INVALID_UCS2)
         (C === UCS2CSE || (num2byte+num3byte) != 0) &&
             return Str(C, T===Text2CSE ? _copysub(str) : _cvtsize(UInt16, pnt, len))
         Str(latin1byte == 0 ? ASCIICSE : _LatinCSE, _cvtsize(UInt8, pnt, len))
@@ -516,7 +516,7 @@ function convert(::Type{<:Str{UTF16CSE}}, bytes::AbstractArray{UInt8})
     # this only deals with big or little-ending UTF-32
     # It really should detect at a minimum UTF-8, UTF-16 big and little
     len = length(bytes)
-    isodd(len) && unierror(StrErrors.ODD_BYTES_16, len, 0)
+    isodd(len) && strerror(StrErrors.ODD_BYTES_16, len, 0)
     len >>>= 1
     @preserve bytes begin
         pnt = pointer(bytes)
@@ -525,7 +525,7 @@ function convert(::Type{<:Str{UTF16CSE}}, bytes::AbstractArray{UInt8})
         else
             buf, out = _convert(reinterpret(Ptr{UInt16}, pnt), len, swappedtype(UInt16))
         end
-        is_valid(UTF16Str, out, len) || unierror(StrErrors.INVALID)
+        is_valid(UTF16Str, out, len) || strerror(StrErrors.INVALID)
         Str(UTF16CSE, buf)
     end
 end

@@ -20,7 +20,7 @@ const UTF_INVALID   = 64  ##< invalid sequences present
     if is_valid_continuation(byt)
         flag = false
     elseif !flag
-        unierror(StrErrors.CONT, pos, byt)
+        strerror(StrErrors.CONT, pos, byt)
     end
     (ch%UInt32 << 6) | (byt & 0x3f), pos, flag
 end
@@ -50,7 +50,7 @@ Returns:
 
 Throws:
 
-* `UnicodeError`
+* `StringError`
 """
 function unsafe_check_string end
 
@@ -80,7 +80,7 @@ function unsafe_check_string(dat::T, pos, endpos;
             if ch < 0xe0
                 # 2-byte UTF-8 sequence (i.e. characters 0x80-0x7ff)
                 if pos > endpos
-                    accept_invalids || unierror(StrErrors.SHORT, pos, ch)
+                    accept_invalids || strerror(StrErrors.SHORT, pos, ch)
                     invalids += 1
                     break
                 end
@@ -97,12 +97,12 @@ function unsafe_check_string(dat::T, pos, endpos;
                 elseif accept_invalids
                     invalids += 1
                 else
-                    unierror(StrErrors.LONG, pos, ch)
+                    strerror(StrErrors.LONG, pos, ch)
                 end
              elseif ch < 0xf0
                 # 3-byte UTF-8 sequence (i.e. characters 0x800-0xffff)
                 if pos + 1 > endpos
-                    accept_invalids || unierror(StrErrors.SHORT, pos, ch)
+                    accept_invalids || strerror(StrErrors.SHORT, pos, ch)
                     invalids += 1
                     break
                 end
@@ -113,20 +113,20 @@ function unsafe_check_string(dat::T, pos, endpos;
                 # check for surrogate pairs, make sure correct
                 if is_surrogate_codeunit(ch)
                     if !is_surrogate_lead(ch)
-                        accept_invalids || unierror(StrErrors.NOT_LEAD, pos-2, ch)
+                        accept_invalids || strerror(StrErrors.NOT_LEAD, pos-2, ch)
                         invalids += 1
                         continue
                     end
                     # next character *must* be a trailing surrogate character
                     if pos + 2 > endpos
-                        accept_invalids || unierror(StrErrors.MISSING_SURROGATE, pos-2, ch)
+                        accept_invalids || strerror(StrErrors.MISSING_SURROGATE, pos-2, ch)
                         invalids += 1
                         break
                     end
                     byt = get_codeunit(dat, pos)
                     pos += 1
                     if byt != 0xed
-                        accept_invalids || unierror(StrErrors.NOT_TRAIL, pos, byt)
+                        accept_invalids || strerror(StrErrors.NOT_TRAIL, pos, byt)
                         invalids += 1
                         continue
                     end
@@ -135,10 +135,10 @@ function unsafe_check_string(dat::T, pos, endpos;
                     surr, pos, flg = check_continuation(dat, pos, surr, accept_invalids)
                     flg && (invalids += 1 ; continue)
                     if !is_surrogate_trail(surr)
-                        accept_invalids || unierror(StrErrors.NOT_TRAIL, pos-2, surr)
+                        accept_invalids || strerror(StrErrors.NOT_TRAIL, pos-2, surr)
                         invalids += 1
                     elseif !accept_surrogates
-                        accept_invalids || unierror(StrErrors.SURROGATE, pos-2, surr)
+                        accept_invalids || strerror(StrErrors.SURROGATE, pos-2, surr)
                         invalids += 1
                     else
                         flags |= UTF_SURROGATE
@@ -152,12 +152,12 @@ function unsafe_check_string(dat::T, pos, endpos;
                 elseif accept_invalids
                     invalids += 1
                 else
-                    unierror(StrErrors.LONG, pos-2, ch)
+                    strerror(StrErrors.LONG, pos-2, ch)
                 end
             elseif ch < 0xf5
                 # 4-byte UTF-8 sequence (i.e. characters > 0xffff)
                 if pos + 2 > endpos
-                    accept_invalids || unierror(StrErrors.SHORT, pos, ch)
+                    accept_invalids || strerror(StrErrors.SHORT, pos, ch)
                     invalids += 1
                     break
                 end
@@ -168,12 +168,12 @@ function unsafe_check_string(dat::T, pos, endpos;
                 ch, pos, flg = check_continuation(dat, pos, ch, accept_invalids)
                 flg && (invalids += 1 ; continue)
                 if ch > 0x10ffff
-                    accept_invalids || unierror(StrErrors.INVALID, pos-3, ch)
+                    accept_invalids || strerror(StrErrors.INVALID, pos-3, ch)
                     invalids += 1
                 elseif ch > 0xffff
                     num4byte += 1
                 elseif is_surrogate_codeunit(ch)
-                    accept_invalids || unierror(StrErrors.SURROGATE, pos-3, ch)
+                    accept_invalids || strerror(StrErrors.SURROGATE, pos-3, ch)
                     invalids += 1
                 elseif accept_long_char
                     # This is an overly long encoded character
@@ -186,12 +186,12 @@ function unsafe_check_string(dat::T, pos, endpos;
                 elseif accept_invalids
                     invalids += 1
                 else
-                    unierror(StrErrors.LONG, pos-2, ch)
+                    strerror(StrErrors.LONG, pos-2, ch)
                 end
             elseif accept_invalids
                 invalids += 1
             else
-                unierror(StrErrors.INVALID, pos, ch)
+                strerror(StrErrors.INVALID, pos, ch)
             end
         end
     end
@@ -216,7 +216,7 @@ function unsafe_check_string(dat::Union{AbstractArray{T}, Ptr{T}}, pos, endpos;
                 num2byte += 1
             elseif ch > 0x0ffff
                 if (ch > 0x10ffff)
-                    accept_invalids || unierror(StrErrors.INVALID, pos, ch)
+                    accept_invalids || strerror(StrErrors.INVALID, pos, ch)
                     invalids += 1
                 else
                     num4byte += 1
@@ -225,7 +225,7 @@ function unsafe_check_string(dat::Union{AbstractArray{T}, Ptr{T}}, pos, endpos;
                 num3byte += 1
             elseif is_surrogate_lead(ch)
                 if pos > endpos
-                    accept_invalids || unierror(StrErrors.MISSING_SURROGATE, pos, ch)
+                    accept_invalids || strerror(StrErrors.MISSING_SURROGATE, pos, ch)
                     invalids += 1
                     break
                 end
@@ -233,7 +233,7 @@ function unsafe_check_string(dat::Union{AbstractArray{T}, Ptr{T}}, pos, endpos;
                 ch = get_codeunit(dat, pos)
                 pos += 1
                 if !is_surrogate_trail(ch)
-                    accept_invalids || unierror(StrErrors.NOT_TRAIL, pos, ch)
+                    accept_invalids || strerror(StrErrors.NOT_TRAIL, pos, ch)
                     invalids += 1
                 elseif typeof(dat) <: AbstractArray{UInt16} # fix this test!
                     num4byte += 1
@@ -243,12 +243,12 @@ function unsafe_check_string(dat::Union{AbstractArray{T}, Ptr{T}}, pos, endpos;
                 elseif accept_invalids
                     invalids += 1
                 else
-                    unierror(StrErrors.SURROGATE, pos, ch)
+                    strerror(StrErrors.SURROGATE, pos, ch)
                 end
             elseif accept_invalids
                 invalids += 1
             else
-                unierror(StrErrors.NOT_LEAD, pos, ch)
+                strerror(StrErrors.NOT_LEAD, pos, ch)
             end
         end
     end
@@ -274,7 +274,7 @@ function unsafe_check_string(str::T;
                 num2byte += 1
             elseif ch > 0x0ffff
                 if (ch > 0x10ffff)
-                    accept_invalids || unierror(StrErrors.INVALID, pos, ch)
+                    accept_invalids || strerror(StrErrors.INVALID, pos, ch)
                     invalids += 1
                 else
                     num4byte += 1
@@ -283,14 +283,14 @@ function unsafe_check_string(str::T;
                 num3byte += 1
             elseif is_surrogate_lead(ch)
                 if done(str, nxt)
-                    accept_invalids || unierror(StrErrors.MISSING_SURROGATE, pos, ch)
+                    accept_invalids || strerror(StrErrors.MISSING_SURROGATE, pos, ch)
                     invalids += 1
                     break
                 end
                 # next character *must* be a trailing surrogate character
                 chr, nxt = next(str, nxt)
                 if !is_surrogate_trail(chr)
-                    accept_invalids || unierror(StrErrors.NOT_TRAIL, pos, chr)
+                    accept_invalids || strerror(StrErrors.NOT_TRAIL, pos, chr)
                     invalids += 1
                 elseif accept_surrogates
                     flags |= UTF_SURROGATE
@@ -298,12 +298,12 @@ function unsafe_check_string(str::T;
                 elseif accept_invalids
                     invalids += 1
                 else
-                    unierror(StrErrors.SURROGATE, pos, ch)
+                    strerror(StrErrors.SURROGATE, pos, ch)
                 end
             elseif accept_invalids
                 invalids += 1
             else
-                unierror(StrErrors.NOT_LEAD, pos, ch)
+                strerror(StrErrors.NOT_LEAD, pos, ch)
             end
         end
         pos = nxt
@@ -340,36 +340,36 @@ function fast_check_string(beg::Ptr{UInt8}, len)
         # Check UTF-8 encoding
         elseif ch < 0xe0
             # 2-byte UTF-8 sequence (i.e. characters 0x80-0x7ff)
-            (pnt += 1) < fin || unierror(StrErrors.SHORT, pnt - beg, ch)
-            (ch > 0xc1 && checkcont(pnt)) || unierror(StrErrors.INVALID, pnt - beg, ch)
+            (pnt += 1) < fin || strerror(StrErrors.SHORT, pnt - beg, ch)
+            (ch > 0xc1 && checkcont(pnt)) || strerror(StrErrors.INVALID, pnt - beg, ch)
             ch > 0xc3 ? (num2byte += 1) : (latin1byte += 1)
         elseif ch < 0xf0
             # 3-byte UTF-8 sequence (i.e. characters 0x800-0xffff)
-            (pnt += 2) < fin || unierror(StrErrors.SHORT, pnt - beg - 1, ch)
+            (pnt += 2) < fin || strerror(StrErrors.SHORT, pnt - beg - 1, ch)
             b2 = get_codeunit(pnt - 1)
             (is_valid_continuation(b2) && checkcont(pnt)) ||
-                unierror(StrErrors.INVALID, pnt - beg - 1, ch)
+                strerror(StrErrors.INVALID, pnt - beg - 1, ch)
             if ch == 0xe0 # Might be overlong
-                b2 < 0xa0 && unierror(StrErrors.LONG, pnt - beg - 1, get_utf8_3byte(pnt, ch))
+                b2 < 0xa0 && strerror(StrErrors.LONG, pnt - beg - 1, get_utf8_3byte(pnt, ch))
             elseif ch == 0xed # Might be surrogate pair
-                b2 > 0x9f && unierror(StrErrors.SURROGATE, pnt - beg - 1, get_utf8_3byte(pnt, ch))
+                b2 > 0x9f && strerror(StrErrors.SURROGATE, pnt - beg - 1, get_utf8_3byte(pnt, ch))
             end
             num3byte += 1
         elseif ch < 0xf5
             # 4-byte UTF-8 sequence (i.e. characters > 0xffff)
-            (pnt += 3) < fin || unierror(StrErrors.SHORT, pnt - beg - 2, ch)
+            (pnt += 3) < fin || strerror(StrErrors.SHORT, pnt - beg - 2, ch)
             b2 = get_codeunit(pnt - 2)
             #println(ch,", ",b2,", ",get_codeunit(pnt-1),", ",get_codeunit(pnt))
             (is_valid_continuation(b2) && checkcont(pnt-1) && checkcont(pnt)) ||
-                unierror(StrErrors.INVALID, pnt - beg - 2, ch)
+                strerror(StrErrors.INVALID, pnt - beg - 2, ch)
             if ch == 0xf0
-                b2 < 0x90 && unierror(StrErrors.LONG, pnt - beg - 2, get_utf8_4byte(pnt, ch))
+                b2 < 0x90 && strerror(StrErrors.LONG, pnt - beg - 2, get_utf8_4byte(pnt, ch))
             elseif ch == 0xf4
-                b2 > 0x8f && unierror(StrErrors.INVALID, pnt - beg - 2, get_utf8_4byte(pnt, ch))
+                b2 > 0x8f && strerror(StrErrors.INVALID, pnt - beg - 2, get_utf8_4byte(pnt, ch))
             end
             num4byte += 1
         else
-            unierror(StrErrors.INVALID, pnt - beg + 1, ch)
+            strerror(StrErrors.INVALID, pnt - beg + 1, ch)
         end
         pnt += 1
     end
@@ -447,12 +447,12 @@ function fast_check_string(beg::Ptr{UInt16}, len)
         elseif !is_surrogate_codeunit(ch)
             num3byte += 1
         elseif !is_surrogate_lead(ch)
-            unierror(StrErrors.NOT_LEAD, Int((pnt - beg)>>>1), ch)
+            strerror(StrErrors.NOT_LEAD, Int((pnt - beg)>>>1), ch)
         elseif (pnt += 2) >= fin
-            unierror(StrErrors.SHORT, Int((pnt - beg - 2)>>>1), ch)
+            strerror(StrErrors.SHORT, Int((pnt - beg - 2)>>>1), ch)
         else
             c2 = get_codeunit(pnt)
-            is_surrogate_trail(c2) || unierror(StrErrors.NOT_TRAIL, Int((pnt - beg)>>>1), c2)
+            is_surrogate_trail(c2) || strerror(StrErrors.NOT_TRAIL, Int((pnt - beg)>>>1), c2)
             pnt += 2
             num4byte += 1
         end
@@ -479,13 +479,13 @@ function fast_check_string(beg::Ptr{UInt32}, len)
         elseif ch <= 0xd7ff
             num3byte += 1
         elseif ch <= 0xdfff
-            unierror(StrErrors.SURROGATE, (pnt-beg+4)>>>2, ch)
+            strerror(StrErrors.SURROGATE, (pnt-beg+4)>>>2, ch)
         elseif ch <= 0xffff
             num3byte += 1
         elseif ch <= 0x10ffff
             num4byte += 1
         else
-            unierror(StrErrors.INVALID, (pnt-beg+4)>>>2, ch)
+            strerror(StrErrors.INVALID, (pnt-beg+4)>>>2, ch)
         end
         pnt += 4
     end
@@ -613,7 +613,7 @@ Returns:
 
 Throws:
 
-* `UnicodeError`
+* `StringError`
 """
 function check_string end
 

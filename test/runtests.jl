@@ -17,7 +17,6 @@ end
 # Should test GenericString also, once overthing else is working
 const UnicodeStringTypes = (String, UTF8Str, )
     # (String, UTF16Str, UTF32Str, UniStr, UTF8Str)
-    # (String, UTF8Str)
 const ASCIIStringTypes = (String, UTF8Str, ASCIIStr, LatinStr)
     #    (UnicodeStringTypes..., ASCIIStr, LatinStr, UCS2Str)
 

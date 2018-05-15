@@ -7,8 +7,8 @@ let u8 = "\U10ffff\U1d565\U1d7f6\U00066\U2008a",
     @test length(u16) == 5
     #@test utf8(u16) == u8
     @test collect(u8) == collect(u16)
-    #@test_throws UnicodeError utf16(utf32(Char(0x120000)))
-    @test_throws UnicodeError utf16(UInt8[1,2,3])
+    #@test_throws StringError utf16(utf32(Char(0x120000)))
+    @test_throws StringError utf16(UInt8[1,2,3])
 
     @test convert(UTF16Str, "test") == "test"
     @test convert(UTF16Str, u16) == u16

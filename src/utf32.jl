@@ -30,7 +30,7 @@ convert(::Type{<:Str{_UTF32CSE}}, ch::Unsigned) =
     (ch > 0xff
      ? (is_unicode(ch)
         ? (ch <= 0xffff ? _convert(_UCS2CSE, ch%UInt16) : _convert(_UTF32CSE, ch%UInt32))
-        : unierror(StrErrors.INVALID, 0, ch))
+        : strerror(StrErrors.INVALID, 0, ch))
      : _convert(_LatinCSE, ch%UInt8))
 
 function convert(::Type{<:Str{UTF32CSE}}, str::AbstractString)
@@ -189,7 +189,7 @@ function convert(::Type{<:Str{C}}, str::MaybeSub{Str{<:UTF32_CSEs}}) where {C<:U
     # handle zero length string quickly
     (len = ncodeunits(str)) == 0 && return empty_str(C === UCS2CSE ? C : ASCIICSE)
     # Check if conversion is valid
-    is_bmp(str) || unierror(StrErrors.INVALID_UCS2)
+    is_bmp(str) || strerror(StrErrors.INVALID_UCS2)
     @preserve str Str(UCS2CSE, _cvtsize(UInt16, pointer(str), len))
 end
 
@@ -215,7 +215,7 @@ function convert(::Type{<:Str{C}}, dat::AbstractArray{<:UniRawChar}) where {C<:U
 end
 
 function convert(::Type{<:Str{UTF32CSE}}, dat::Vector{<:Union{UInt32,Int32,Text4Chr}})
-    is_valid(UTF32Str, dat) || unierror(StrErrors.INVALID)
+    is_valid(UTF32Str, dat) || strerror(StrErrors.INVALID)
     @preserve dat Str(UTF32CSE, _copysub(pointer(dat), length(dat)))
 end
 
@@ -249,7 +249,7 @@ function convert(::Type{T}, bytes::AbstractArray{UInt8}) where {C<:UTF32_CSEs,T<
     # this only deals with big or little-ending UTF-32
     # It really should detect at a minimum UTF-8, UTF-16 big and little
     len = length(bytes)
-    len & 3 == 0 || unierror(StrErrors.ODD_BYTES_32, len, 0)
+    len & 3 == 0 || strerror(StrErrors.ODD_BYTES_32, len, 0)
     len >>>= 2
     @preserve bytes begin
         pnt = pointer(bytes)
@@ -259,7 +259,7 @@ function convert(::Type{T}, bytes::AbstractArray{UInt8}) where {C<:UTF32_CSEs,T<
             buf, out = _convert(reinterpret(Ptr{UInt32_U}, pnt), len, swappedtype(UInt32_U))
         end
         # Todo, this needs better handling
-        is_valid(T, out, len) || unierror(StrErrors.INVALID)
+        is_valid(T, out, len) || strerror(StrErrors.INVALID)
         Str(C, buf)
     end
 end

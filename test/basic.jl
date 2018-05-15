@@ -283,7 +283,7 @@ let
 
     @test srep[7] == 'β'
     @static if V6_COMPAT
-        @test_throws UnicodeError srep[8]
+        @test_throws StringError srep[8]
     else
         @test_throws StringIndexError srep[8]
     end
@@ -951,8 +951,8 @@ end
 @testset "Unicode Strings" begin
     # Unicode errors
     let io = IOBuffer()
-        show(io, UnicodeError(StrErrors.SHORT, 1, 10))
-        check = "UnicodeError: invalid UTF-8 sequence starting at index 1 (0xa) missing one or more continuation bytes"
+        show(io, StringError(StrErrors.SHORT, 1, 10))
+        check = "$(StringError): invalid UTF-8 sequence starting at index 1 (0xa) missing one or more continuation bytes"
         @test String(take!(io)) == check
     end
 end
@@ -965,7 +965,7 @@ end
         for hichar = 0xd800:0xdbff, lochar = 0xdc00:0xdfff
             seq = string(Char(hichar), Char(lochar))
             # Normal conversion throws an error
-            @test_throws UnicodeError utf8(seq)
+            @test_throws StringError utf8(seq)
             # Unsafe conversions return invalid strings as Text*Str
             @test typeof(unsafe_str(seq)) == Text1Str
             # With accept_surrogates flag, return converted to valid string (_UTF32Str)
@@ -984,7 +984,7 @@ end
     @test reverse(UTF8Str("xyz\uff\u800\uffff\U10ffff")) == "\U10ffff\uffff\u800\uffzyx"
     for binstr in ([0xc1], [0xd0], [0xe0], [0xed, 0x80], [0xf0], [0xf0, 0x80], [0xf0, 0x80, 0x80])
         str = vcat(codeunits("xyz"), binstr)
-        @test_throws UnicodeError reverse(UTF8Str(str))
+        @test_throws StringError reverse(UTF8Str(str))
     end
 end
 
@@ -1017,7 +1017,7 @@ for (fun, S, T) in ((utf16, UInt16, UTF16Str), (utf32, UInt32, UTF32Str))
     @test Base.containsnul(x)
     @test Base.containsnul(tst)
     # map
-    #@test_throws UnicodeError map(islower, x)
+    #@test_throws StringError map(islower, x)
     #@test_throws ArgumentError map(islower, tst)
     # SubArray conversion
     subarr = view(cmp, 1:6)

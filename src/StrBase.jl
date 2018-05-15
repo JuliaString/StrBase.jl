@@ -37,7 +37,7 @@ const MCU = MultiCU()
                     MS_UTF8, MS_UTF16, MS_UTF32, MS_SubUTF32, MS_Latin, MS_ByteStr, MS_RawUTF8,
                     _wrap_substr, _empty_sub, CHUNKSZ, CHUNKMSK,
                     AccessType, UInt16_U, UInt32_U, UInt16_S, UInt32_S, UInt16_US, UInt32_US,
-                    alignedtype, swappedtype
+                    alignedtype, swappedtype, checkkeep, splitarr, __split, __rsplit, __replace
 
 using Base: @_inline_meta, @propagate_inbounds, @_propagate_inbounds_meta, RefValue
 

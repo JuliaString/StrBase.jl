@@ -63,8 +63,6 @@ rpad(ch::Chr, cnt::Integer, pad::AbsChar=' ') =
 
 const SetOfChars = Union{Tuple{Vararg{<:AbsChar}},AbstractVector{<:AbsChar},Set{<:AbsChar}}
 
-import Base: split, rsplit
-
 function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     pos = 1
     lst = lastindex(str)
@@ -85,7 +83,6 @@ function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     end
     (keep_empty || pos <= lst) ? push!(strs, SubString(str, pos)) : strs
 end
-
 
 function __rsplit(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     res = find(Last, splitter, str)
