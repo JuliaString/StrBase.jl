@@ -73,12 +73,12 @@ function _upper(::Type{<:Str{UTF16CSE}}, beg, off, len)
         elseif is_surrogate_trail(ch)
             # pick up previous code unit (lead surrogate)
             cp = get_supplementary(get_codeunit(out - 2), ch)
-            if _cat(cp) == Uni.LL
+            if _islower_u(cp)
                 w1, w2 = get_utf16(_uppercase_u(cp))
                 set_codeunit!(out - 2, w1)
                 set_codeunit!(out,     w2)
             end
-        elseif _cat(ch) == Uni.LL
+        elseif _islower_u(ch)
             set_codeunit!(out, _uppercase_u(ch))
         end
         out += 2
