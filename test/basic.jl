@@ -340,7 +340,7 @@ end
 
     foobar = ST("foobar")
     
-    @test str_done(eachindex(foobar), 7)
+    @test done(eachindex(foobar), 7)
     @test first(eachindex(foobar)) === 1
     @static if !V6_COMPAT
         @test first(eachindex(ST(""))) === 1

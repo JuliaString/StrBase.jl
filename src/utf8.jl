@@ -361,8 +361,6 @@ _next(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
 _next(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) where {T} =
     str_next(SubString(str.string.data, s.offset + pos, s.offset + ncodeunits(s)), 1)
 
-done(str::Str{<:UTF8_CSEs}, i::Int) = i > sizeof(str.data)
-
 ## overload methods for efficiency ##
 
 @inline _isvalid_char_pos(::MultiCU, ::Type{<:UTF8_CSEs}, str, pos::Integer) =

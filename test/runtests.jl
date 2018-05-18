@@ -2,13 +2,14 @@
 # License is MIT: LICENSE.md
 
 using APITools
-@api init
-@api extend StrAPI, CharSetEncodings, Chars, StrBase
 
-@static V6_COMPAT ? (using Base.Test) : (using Test, Random, Unicode)
+@api test StrAPI, CharSetEncodings, Chars, StrBase
+
+@static V6_COMPAT || (using Random, Unicode)
 
 # Add definitions not present in v0.6.2 for GenericString
 @static if V6_COMPAT
+    import StrAPI: ncodeunits, codeunits, codeunit
     ncodeunits(s::GenericString) = ncodeunits(s.string)
     codeunit(s::GenericString) = codeunit(s.string)
     codeunit(s::GenericString, i::Integer) = codeunit(s.string, i)
