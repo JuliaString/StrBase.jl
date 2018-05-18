@@ -127,6 +127,13 @@ _index(cs::EncodingStyle, ::Rev, str, i, nchar) = _prevind(cs, str, i, nchar)
 @propagate_inbounds nextind(str::MaybeSub{T}, i::Int, nchar::Int) where {T<:Str} =
     (@_inline_meta(); _nextind(EncodingStyle(T), str, i, nchar))
 
+@static if NEW_ITERATE
+    @propagate_inbounds iterate(str::T, i::Int) where {T<:Str} =
+        (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
+    @propagate_inbounds iterate(str::SubString{T}, i::Int) where {T<:Str} =
+        (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
+end
+
 @propagate_inbounds index(str::MaybeSub{T}, i::Integer) where {T<:Str} =
     (@_inline_meta(); _index(EncodingStyle(T), str, Int(i)))
 @propagate_inbounds index(::D, str::MaybeSub{T}, i::Integer) where {T<:Str,D<:Direction} =

@@ -50,15 +50,15 @@ end
 
 @inline function _cpcmp(a::MaybeSub{T}, b) where {C<:CSE,T<:Str{C}}
     len, pnt, fin = _lenpntfin(a)
-    pos = start(b)
+    pos = 1
     while pnt < fin
-        done(b, pos) && return 1
+        str_done(b, pos) && return 1
         c1, pnt = _nextcp(C, pnt)
-        ch, pos = next(b, pos)
+        ch, pos = str_next(b, pos)
         c2 = ch%UInt32
         c1 == c2 || return ifelse(c1 < c2, -1, 1)
     end
-    ifelse(done(b, pos), 0, -1)
+    ifelse(str_done(b, pos), 0, -1)
 end
 
 _cmp(::CodePointCompare, a::MaybeSub{<:Str}, b::AbstractString) = _cpcmp(a, b)
@@ -89,11 +89,11 @@ cmp(a::MaybeSub{<:Str}, b::MaybeSub{<:Str}) = @preserve a b _cmp(CompareStyle(a,
 
 function _cpeq(a::MaybeSub{T}, b) where {C<:CSE, T<:Str{C}}
     len, pnt, fin = _lenpntfin(a)
-    pos = start(b)
+    pos = 1
     while pnt < fin
-        done(b, pos) && return false
+        str_done(b, pos) && return false
         c1, pnt = _nextcp(C, pnt)
-        ch, pos = next(b, pos)
+        ch, pos = str_next(b, pos)
         c1 == codepoint(ch) || return false
     end
     true

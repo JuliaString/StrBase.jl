@@ -71,9 +71,10 @@ mutable struct CharStr <: AbstractString
     chars::Vector{Char}
     CharStr(x) = new(collect(x))
 end
-start(x::CharStr) = start(x.chars)
-next(x::CharStr, i::Int) = next(x.chars, i)
-done(x::CharStr, i::Int) = done(x.chars, i)
+start(x::CharStr) = 1
+next(x::CharStr, i::Int) = @static NEW_ITERATE ? iterate(x.chars, i) : next(x.chars, i)
+done(x::CharStr, i::Int) = i > length(x.chars)
+@static NEW_ITERATE && (iterate(x::CharStr, i::Int) = iterate(x.chars, i))
 
 lastindex(x::CharStr) = lastindex(x.chars)
 ncodeunits(x::CharStr) = lastindex(x.chars)
@@ -278,8 +279,8 @@ let
 
     @test lastindex(srep) == 7
 
-    @test next(srep, 3) == ('β',5)
-    @test next(srep, 7) == ('β',9)
+    @test str_next(srep, 3) == ('β',5)
+    @test str_next(srep, 7) == ('β',9)
 
     @test srep[7] == 'β'
     @static if V6_COMPAT
@@ -318,8 +319,8 @@ end
         @test_throws MethodError codeunit(tstr, true)
         @test_throws MethodError isvalid(tstr, 1)
         @test_throws MethodError isvalid(tstr, true)
-        @test_throws MethodError next(tstr, 1)
-        @test_throws MethodError next(tstr, true)
+        @test_throws MethodError str_next(tstr, 1)
+        @test_throws MethodError str_next(tstr, true)
         @test_throws MethodError lastindex(tstr)
     end
 
@@ -339,7 +340,7 @@ end
 
     foobar = ST("foobar")
     
-    @test done(eachindex(foobar),7)
+    @test str_done(eachindex(foobar), 7)
     @test first(eachindex(foobar)) === 1
     @static if !V6_COMPAT
         @test first(eachindex(ST(""))) === 1
@@ -580,7 +581,7 @@ end
     for st in ("Hello", "Σ", "こんにちは", "😊😁")
         local s
         s = ST(st)
-        @test next(s, lastindex(s))[2] > sizeof(s)
+        @test str_next(s, lastindex(s))[2] > sizeof(s)
         @test nextind(s, lastindex(s)) > sizeof(s)
     end
 end
@@ -889,7 +890,7 @@ function testbin(::Type{ST}) where {ST}
                  b"\xf8\x9f\x98\x84", b"\xf8\x9f\x98\x84z")),
         s in lst
         st = ST(s)
-        @test next(st, 1)[2] == 2
+        @test str_next(st, 1)[2] == 2
         @test nextind(st, 1) == 2
     end
 
@@ -904,7 +905,7 @@ function testbin(::Type{ST}) where {ST}
         (s, r) in lst
         st = ST(s)
         (ST === BinaryStr || ST === Text1Str) && (r = 2)
-        @test next(st, 1)[2] == r
+        @test str_next(st, 1)[2] == r
         @test nextind(st, 1) == r
     end
 end

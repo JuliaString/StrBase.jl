@@ -80,8 +80,8 @@ function testuni(T)
     @test String(take!(b)) == "\u2200\u2222"
 
     V6_COMPAT || @test_throws StringIndexError SubString(str, 4, 5)
-    @test_throws BoundsError next(u, 0)
-    @test_throws BoundsError next(u, 7)
+    @test_throws BoundsError str_next(u, 0)
+    @test_throws BoundsError str_next(u, 7)
     @test_throws BoundsError getindex(u, 0)
     @test_throws BoundsError getindex(u, 7)
     @test_throws BoundsError getindex(u, 0:1)
@@ -117,10 +117,10 @@ function testuni(T)
                 s = sa
             end
             a = 0
-            while !done(s, a)
+            while !str_done(s, a)
                 a = nextind(s, a)
                 b = a - 1
-                while !done(s, b)
+                while !str_done(s, b)
                     ss = SubString(s, a, b)
                     s2 = s[a:b]
                     @test ncodeunits(ss) == ncodeunits(s2)
