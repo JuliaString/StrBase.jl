@@ -20,8 +20,6 @@ struct Str{T,SubStr,Cache,Hash} <: AbstractString
         new{T,S,C,H}(v,s,c,h)
 end
 
-@api define_public Str
-
 (::Type{Str})(::Type{C}, v::String) where {C<:CSE} = Str(C, v, nothing, nothing, nothing)
 (::Type{Str})(::Type{C}, v::Str) where {C<:CSE} = Str(C, v.data, nothing, nothing, nothing)
 
@@ -52,12 +50,12 @@ for lst in cse_info
     low = lowercase(str)
     if str[1] == '_'
         @eval empty_str(::Type{$cse}) = $(symstr("empty", low))
-        @eval @api define_develop $sym
+        @eval @api develop $sym
     else
         emp = symstr("empty_", low)
         @eval const $emp = Str($cse, empty_string)
         @eval empty_str(::Type{$cse}) = $emp
-        @eval @api define_public $sym
+        @eval @api public $sym
     end
     @eval convert(::Type{$sym}, str::$sym) = str
 end
@@ -70,8 +68,6 @@ typemin(::T) where {T<:Str} = empty_str(T)
 """Union type for fast dispatching"""
 const UniStr = Union{ASCIIStr, _LatinStr, _UCS2Str, _UTF32Str}
 show(io::IO, ::Type{UniStr}) = print(io, :UniStr)
-
-@api define_public UniStr
 
 # Display BinaryCSE as if String
 show(io::IO, str::T) where {T<:Str{BinaryCSE}} = show(io, str.data)
