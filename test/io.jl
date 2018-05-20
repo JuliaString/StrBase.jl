@@ -153,6 +153,7 @@ end
     V6_COMPAT || @test_throws MethodError join(1, 2, 3, 4)
 end
 
+#=
 # issue #9178 `join` calls `done()` twice on the iterables
 mutable struct i9178
     nnext::Int64
@@ -162,8 +163,9 @@ Base.start(jt::i9178)   = (jt.nnext=0 ; jt.ndone=0 ; 0)
 Base.done(jt::i9178, n) = (jt.ndone += 1 ; n > 3)
 _next(jt::i9178, n) = (jt.nnext += 1 ; ("$(jt.nnext),$(jt.ndone)", n+1))
 Base.next(jt::i9178, n) = _next(jt, n)
-@static NEW_ITERATE && (Base.iterate(jt::i9178, n) = _next(jt, n))
+@static NEW_ITERATE && (Base.iterate(jt::i9178, n=1) = _next(jt, n))
 @test join(i9178(0,0), ";") == "1,1;2,2;3,3;4,4"
+=#
 
 # quotes + interpolation (issue #455)
 @test "$("string")" == "string"
