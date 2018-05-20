@@ -106,12 +106,15 @@ _index(cs::EncodingStyle, ::Rev, str, i, nchar) = _prevind(cs, str, i, nchar)
 #  Call to specialized version via trait
 @propagate_inbounds lastindex(str::MaybeSub{T}) where {T<:Str} =
     (@_inline_meta(); _lastindex(EncodingStyle(T), str))
-@propagate_inbounds getindex(str::MaybeSub{T}, i::Int) where {T<:Str} =
-    (@_inline_meta(); R = eltype(T) ; _getindex(EncodingStyle(T), R, str, i)::R)
-@propagate_inbounds next(str::T, i::Int) where {T<:Str} =
-    (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
-@propagate_inbounds next(str::SubString{T}, i::Int) where {T<:Str} =
-    (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
+@propagate_inbounds function getindex(str::MaybeSub{T}, i::Int)::eltype(T) where {T<:Str}
+    (@_inline_meta(); _getindex(EncodingStyle(T), eltype(T), str, i))
+end
+@propagate_inbounds function next(str::T, i::Int)::Tuple{eltype(T),Int} where {T<:Str}
+    (@_inline_meta(); _next(EncodingStyle(T), eltype(T), str, i))
+end
+@propagate_inbounds function next(str::SubString{T}, i::Int)::Tuple{eltype(T),Int} where {T<:Str}
+    (@_inline_meta(); _next(EncodingStyle(T), eltype(T), str, i))
+end
 @propagate_inbounds length(str::MaybeSub{T}) where {T<:Str} =
     (@_inline_meta(); _length(EncodingStyle(T), str))
 @propagate_inbounds length(str::MaybeSub{T}, i::Int, j::Int) where {T<:Str} =
@@ -128,10 +131,17 @@ _index(cs::EncodingStyle, ::Rev, str, i, nchar) = _prevind(cs, str, i, nchar)
     (@_inline_meta(); _nextind(EncodingStyle(T), str, i, nchar))
 
 @static if NEW_ITERATE
-    @propagate_inbounds iterate(str::T, i::Int) where {T<:Str} =
-        (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
-    @propagate_inbounds iterate(str::SubString{T}, i::Int) where {T<:Str} =
-        (@_inline_meta(); R = eltype(T) ; _next(EncodingStyle(T), R, str, i)::Tuple{R,Int})
+    @propagate_inbounds function _iterate(::SingleCU, T, str, pos)
+        @_inline_meta()
+        T(get_codeunit(str, pos)), pos + 1
+    end
+    @propagate_inbounds function iterate(str::MaybeSub{T}, pos::Int=firstindex(str)
+                                         )::Union{Nothing,Tuple{eltype(T),Int}} where {T<:Str}
+        @_inline_meta()
+        pos > ncodeunits(str) && return nothing
+        @boundscheck pos <= 0 && boundserr(str, pos)
+        _iterate(EncodingStyle(T), eltype(T), str, pos)
+    end
 end
 
 @propagate_inbounds index(str::MaybeSub{T}, i::Integer) where {T<:Str} =

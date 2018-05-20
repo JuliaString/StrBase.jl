@@ -74,7 +74,7 @@ end
 start(x::CharStr) = 1
 next(x::CharStr, i::Int) = @static NEW_ITERATE ? iterate(x.chars, i) : next(x.chars, i)
 done(x::CharStr, i::Int) = i > length(x.chars)
-@static NEW_ITERATE && (iterate(x::CharStr, i::Int) = iterate(x.chars, i))
+@static NEW_ITERATE && (iterate(x::CharStr, i::Int=1) = iterate(x.chars, i))
 
 lastindex(x::CharStr) = lastindex(x.chars)
 ncodeunits(x::CharStr) = lastindex(x.chars)
@@ -339,8 +339,12 @@ end
     @test_throws BoundsError GenericString("∀∃")[UInt16(10)]
 
     foobar = ST("foobar")
-    
-    @test done(eachindex(foobar), 7)
+
+    @static if NEW_ITERATE
+        @test iterate(eachindex(foobar), 7) === nothing
+    else
+        @test done(eachindex(foobar), 7)
+    end
     @test first(eachindex(foobar)) === 1
     @static if !V6_COMPAT
         @test first(eachindex(ST(""))) === 1

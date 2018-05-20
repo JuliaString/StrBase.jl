@@ -154,8 +154,7 @@ function _nextcpfun(::MultiCU, ::Type{UTF16CSE}, pnt)
      : (ch%UInt32, pnt + 2))
 end
 
-@propagate_inbounds function _next(::MultiCU, T, str::MS_UTF16, pos::Int)
-    @boundscheck pos <= ncodeunits(str) || boundserr(str, pos)
+@propagate_inbounds function _iterate(::MultiCU, ::Type{T}, str::MS_UTF16, pos::Int) where {T}
     @preserve str begin
         pnt = bytoff(pointer(str), pos)
         ch = get_codeunit(pnt - 2)
@@ -163,6 +162,11 @@ end
          ? (T(get_supplementary(ch, get_codeunit(pnt))), pos + 2)
          : (T(ch), pos + 1))
     end
+end
+
+@propagate_inbounds function _next(::MultiCU, ::Type{T}, str::MS_UTF16, pos::Int) where {T}
+    @boundscheck pos <= ncodeunits(str) || boundserr(str, pos)
+    _iterate(MultiCU(), T, str, pos)
 end
 
 @inline _thisind(::MultiCU, str::MS_UTF16, len, pnt, pos) =

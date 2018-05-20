@@ -334,11 +334,8 @@ function _nextcpfun(::MultiCU, ::Type{UTF8CSE}, pnt)
     end
 end
 
-# Gets next codepoint
-@propagate_inbounds function _next(::MultiCU, ::Type{T}, str::MS_UTF8,
-                                   pos::Int) where {T<:Chr}
-    len = ncodeunits(str)
-    @boundscheck 0 < pos <= len || boundserr(str, pos)
+@propagate_inbounds function _iterate(::MultiCU, ::Type{T}, str::MS_UTF8,
+                                      pos::Int) where {T<:Chr}
     @preserve str begin
         pnt = pointer(str) + pos - 1
         ch = get_codeunit(pnt)
@@ -356,10 +353,23 @@ end
     end
 end
 
+_iterate(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
+    iterate(str.data, pos)
+_iterate(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) where {T} =
+    iterate(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
+
+# Gets next codepoint
+@propagate_inbounds function _next(::MultiCU, ::Type{T}, str::MS_UTF8,
+                                   pos::Int) where {T<:Chr}
+    len = ncodeunits(str)
+    @boundscheck 0 < pos <= len || boundserr(str, pos)
+    _iterate(MultiCU(), T, str, pos)
+end
+
 _next(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
     str_next(str.data, pos)
 _next(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) where {T} =
-    str_next(SubString(str.string.data, s.offset + pos, s.offset + ncodeunits(s)), 1)
+    str_next(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
 
 ## overload methods for efficiency ##
 
