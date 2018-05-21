@@ -46,6 +46,7 @@ const MCU = MultiCU()
 
 include("types.jl")
 @static V6_COMPAT && include("compat.jl")
+@static NEW_ITERATE && include("fixparse.jl")
 include("chars.jl")
 include("access.jl")
 include("traits.jl")

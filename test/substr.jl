@@ -80,12 +80,12 @@ function testuni(T)
     @test String(take!(b)) == "\u2200\u2222"
 
     V6_COMPAT || @test_throws StringIndexError SubString(str, 4, 5)
-    if V6_COMPAT
-        @test_throws BoundsError next(u, 0)
-        @test_throws BoundsError next(u, 7)
-    else
+    if NEW_ITERATE
         @test_throws BoundsError iterate(u, 0)
         @test iterate(u, 7) === nothing
+    else
+        @test_throws BoundsError next(u, 0)
+        @test_throws BoundsError next(u, 7)
     end
     @test_throws BoundsError getindex(u, 0)
     @test_throws BoundsError getindex(u, 7)
