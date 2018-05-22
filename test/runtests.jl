@@ -1,11 +1,11 @@
 # This file includes code that was formerly a part of Julia.
 # License is MIT: LICENSE.md
 
-using APITools
+using ModuleInterfaceTools
 
 @api test StrAPI, CharSetEncodings, Chars, StrBase
 
-@static V6_COMPAT || (using Random, Unicode)
+@static V6_COMPAT || (using Random)
 
 # Add definitions not present in v0.6.2 for GenericString
 @static if V6_COMPAT

@@ -9,7 +9,7 @@ Based partly on code in LegacyStrings that used to be part of Julia
 """
 module StrBase
 
-using APITools
+using ModuleInterfaceTools
 
 @api extend StrAPI, CharSetEncodings, Chars
 
