@@ -3,7 +3,7 @@
 
 using ModuleInterfaceTools
 
-@api test StrAPI, CharSetEncodings, Chars, StrBase
+@api test StrAPI, CharSetEncodings, ChrBase, StrBase
 
 @static V6_COMPAT || (using Random)
 
