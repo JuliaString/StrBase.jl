@@ -1,0 +1,6 @@
+desc = "Basic functionality for Str types"
+keywords = ["Strings"]
+license = "MIT"
+name = "StrBase"
+#uuid = 
+repo = "https://github.com/JuliaString/StrBase.jl.git"
