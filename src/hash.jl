@@ -5,20 +5,34 @@ Copyright 2018 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
 
-using MurmurHash3: mmhash128, mmhash128_a
+using MurmurHash3
 
 # Support for higher performance hashing, while still compatible with hashed UTF8 String
+
+mmhash128(str::Union{String, Str}, seed::UInt32) =
+    @preserve str mmhash128_a(sizeof(str), pointer(str), seed)
+
+is_aligned(pnt::Ptr) = (reinterpret(UInt, pnt) & (sizeof(UInt) - 1)%UInt) == 0
+
+# Check alignment of substrings first
+function mmhash128(str::SubString, seed::UInt32)
+    @preserve str begin
+        siz = sizeof(str)
+        pnt = pointer(str)
+        is_aligned(pnt) ? mmhash128_a(siz, pnt, seed) : mmhash128_u(siz, pnt, seed)
+    end
+end
 
 # This are for debugging purposes, to compare against current C implementation, will be removed
 _memhash(siz, ptr, seed) =
     ccall(Base.memhash, UInt, (Ptr{UInt8}, Csize_t, UInt32), ptr, siz, seed % UInt32)
 
 # Optimized code for hashing empty string
-_hash(seed)          = last(mmhash128(seed%UInt32)) + seed
+_hash(seed)          = last(mmhash128_a(seed%UInt32)) + seed
 # Optimized for hashing a UTF-8 compatible aligned string
-_hash(str, seed)     = last(mmhash128(str, seed%UInt32)) + seed
+_hash(str, seed)     = last(mmhash128_a(str, seed%UInt32)) + seed
 # For hashing generic abstract strings as if UTF-8 encoded
-_hash_abs(str, seed) = last(mmhash128_a(str, seed%UInt32)) + seed
+_hash_abs(str, seed) = last(mmhash128_c(str, seed%UInt32)) + seed
 
 hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str} =
     isempty(str) ? _hash(seed + Base.memhash_seed) : _hash_abs(str, seed + Base.memhash_seed)
