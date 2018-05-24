@@ -5,6 +5,36 @@ Copyright 2018 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
 
+using MurmurHash3: mmhash128, mmhash128_a
+
+# Support for higher performance hashing, while still compatible with hashed UTF8 String
+
+# This are for debugging purposes, to compare against current C implementation, will be removed
+_memhash(siz, ptr, seed) =
+    ccall(Base.memhash, UInt, (Ptr{UInt8}, Csize_t, UInt32), ptr, siz, seed % UInt32)
+
+# Optimized code for hashing empty string
+_hash(seed)          = last(mmhash128(seed%UInt32)) + seed
+# Optimized for hashing a UTF-8 compatible aligned string
+_hash(str, seed)     = last(mmhash128(str, seed%UInt32)) + seed
+# For hashing generic abstract strings as if UTF-8 encoded
+_hash_abs(str, seed) = last(mmhash128_a(str, seed%UInt32)) + seed
+
+hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str} =
+    isempty(str) ? _hash(seed + Base.memhash_seed) : _hash_abs(str, seed + Base.memhash_seed)
+
+# Check for UTF-8 compatible (i.e. only ASCII)
+function hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str{LatinCSE}}
+    seed += Base.memhash_seed
+    isempty(str) ? _hash(seed) : (is_ascii(str) ? _hash(str, seed) : _hash_abs(str, seed))
+end
+
+# Directly calculate hash for "compatible" types
+
+hash(str::Union{S,SubString{S}},
+     seed::UInt) where {S<:Str{<:Union{ASCIICSE,UTF8CSE,Binary_CSEs}}} =
+         isempty(str) ? _hash(seed + Base.memhash_seed) : _hash(str, seed + Base.memhash_seed)
+
 # Use crc32c to make CRC32c of UTF8 view of string, for use with hashing
 # where different string types are supposed to compare as ==
 
@@ -45,31 +75,6 @@ end
 utf8crc(str::Union{S,SubString{S}},
     seed::UInt32=0%UInt32) where {S<:Str{<:Union{ASCIICSE,UTF8CSE,BinaryCSE}}} =
         unsafe_crc32c(pointer(str), sizeof(s) % Csize_t, seed)
-    
-
-# Support for higher performance hashing, while still compatible with hashed UTF8 String
-
-# Optimized code for hashing empty string
-_hash(seed)          = last(mmhash128(seed%UInt32)) + seed
-# Optimized for hashing a UTF-8 compatible aligned string
-_hash(str, seed)     = last(mmhash128(str, seed%UInt32)) + seed
-# For hashing generic abstract strings as if UTF-8 encoded
-_hash_abs(str, seed) = last(mmhash128_a(str, seed%UInt32)) + seed
-
-hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str} =
-    isempty(str) ? _hash(seed + Base.memhash_seed) : _hash_abs(str, seed + Base.memhash_seed)
-
-# Check for UTF-8 compatible (i.e. only ASCII)
-function hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str{LatinCSE}}
-    seed += Base.memhash_seed
-    isempty(str) ? _hash(seed) : (is_ascii(str) ? _hash(str, seed) : _hash_abs(str, seed))
-end
-
-# Directly calculate hash for "compatible" types
-
-hash(str::Union{S,SubString{S}},
-     seed::UInt) where {S<:Str{<:Union{ASCIICSE,UTF8CSE,Binary_CSEs}}} =
-         isempty(str) ? _hash(seed + Base.memhash_seed) : _hash(str, seed + Base.memhash_seed)
 
 # Optimize conversion to ASCII or UTF8 to calculate compatible hash value
                           
@@ -108,4 +113,5 @@ function cvthash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str{UTF16CSE}
               seed)
     end
 end
+
 
