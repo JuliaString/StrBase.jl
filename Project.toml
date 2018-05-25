@@ -1,6 +1,9 @@
+name = "StrBase"
 desc = "Basic functionality for Str types"
 keywords = ["Strings"]
+authors = ["ScottPJones <scottjones@alum.mit.edu>"]
 license = "MIT"
-name = "StrBase"
-#uuid = 
 repo = "https://github.com/JuliaString/StrBase.jl.git"
+version = "0.1.0+"
+#deps = ["MurmurHash3", "ChrBase"]
+
