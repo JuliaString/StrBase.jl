@@ -19,7 +19,7 @@ function mmhash128(str::SubString, seed::UInt32)
     @preserve str begin
         siz = sizeof(str)
         pnt = pointer(str)
-        is_aligned(pnt) ? mmhash128_a(siz, pnt, seed) : mmhash128_u(siz, pnt, seed)
+        is_aligned(pnt) ? mmhash128_a(siz, pnt, seed) : mmhash128_c(str, seed) # mmhash128_u(siz, pnt, seed)
     end
 end
 
@@ -30,7 +30,7 @@ _memhash(siz, ptr, seed) =
 # Optimized code for hashing empty string
 _hash(seed)          = last(mmhash128_a(seed%UInt32)) + seed
 # Optimized for hashing a UTF-8 compatible aligned string
-_hash(str, seed)     = last(mmhash128_a(str, seed%UInt32)) + seed
+_hash(str, seed)     = last(mmhash128(str, seed%UInt32)) + seed
 # For hashing generic abstract strings as if UTF-8 encoded
 _hash_abs(str, seed) = last(mmhash128_c(str, seed%UInt32)) + seed
 
