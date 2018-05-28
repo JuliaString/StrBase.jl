@@ -6,7 +6,6 @@ license = "MIT"
 uuid = "9ae48233-fac8-48c3-9111-9059e0a096a8"
 repo = "https://github.com/JuliaString/StrBase.jl.git"
 
-version = "0.1.0+"
 [deps]
 MurmurHash3 = "f0d41675-b40b-4ac0-9c24-1938651d8492"
 ChrBase = "40048718-5f69-11e8-3be1-2f493f2f747a"
