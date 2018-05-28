@@ -47,8 +47,6 @@ build_script:
           Pkg.clone("$git/ChrBase.jl", chrbase);
           Pkg.clone("$git/MurmurHash3.jl", murmur);
           Pkg.clone(pwd(), pkg);
-      else;
-          Pkg.add(pwd(), pkg);
       end"
 
 test_script:

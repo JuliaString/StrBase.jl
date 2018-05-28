@@ -1,12 +1,12 @@
-name = "StrBase"
+authors = ["ScottPJones <scottjones@alum.mit.edu>"]
 desc = "Basic functionality for Str types"
 keywords = ["Strings"]
-authors = ["ScottPJones <scottjones@alum.mit.edu>"]
 license = "MIT"
-uuid = "9ae48233-fac8-48c3-9111-9059e0a096a8"
+name = "StrBase"
 repo = "https://github.com/JuliaString/StrBase.jl.git"
+uuid = "9ae48233-fac8-48c3-9111-9059e0a096a8"
 
 [deps]
-MurmurHash3 = "f0d41675-b40b-4ac0-9c24-1938651d8492"
+CharSetEncodings = "cb9422de-a9d8-5b68-86db-ff05833ab307"
 ChrBase = "40048718-5f69-11e8-3be1-2f493f2f747a"
-
+MurmurHash3 = "f0d41675-b40b-4ac0-9c24-1938651d8492"
