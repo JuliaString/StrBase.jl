@@ -40,13 +40,14 @@ install:
 build_script:
 # Need to convert from shallow to complete for Pkg.clone to work
   - IF EXIST .git\shallow (git fetch --unshallow)
-  - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using Pkg, InteractiveUtils);
-      versioninfo(); pkg = \"StrBase\"; chrbase = \"ChrBase\"; murmur = \"MurmurHash3\";
+  - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using InteractiveUtils);
+      versioninfo(); pkg = \"StrBase\";
       if VERSION < v\"0.7.0-DEV.5183\";
-          git = "https://github.com/JuliaString";
-          Pkg.clone("$git/ChrBase.jl", chrbase);
-          Pkg.clone("$git/MurmurHash3.jl", murmur);
-          Pkg.clone(pwd(), pkg);
+         for n in (\"ModuleInterfaceTools\", \"MurmurHash3\", \"StrTables\", \"StrAPI\", \"CharSetEncodings\");
+             Pkg.add(n);
+         end;
+         Pkg.clone(\"https://github.com/JuliaString/ChrBase.jl.git\", \"ChrBase\");
+         Pkg.clone(pwd(), pkg);
       end"
 
 test_script:
