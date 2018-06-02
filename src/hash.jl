@@ -17,9 +17,15 @@ is_aligned(pnt::Ptr) = (reinterpret(UInt, pnt) & (sizeof(UInt) - 1)%UInt) == 0
 # Check alignment of substrings first
 function mmhash128(str::SubString, seed::UInt32)
     @preserve str begin
-        siz = sizeof(str)
         pnt = pointer(str)
-        is_aligned(pnt) ? mmhash128_a(siz, pnt, seed) : mmhash128_c(str, seed) # mmhash128_u(siz, pnt, seed)
+        if is_aligned(pnt)
+            mmhash128_a(sizeof(str), pnt, seed)
+        elseif sizeof(Int) == 8
+            mmhash128_c(str, seed)
+        else
+            s = string(str)
+            @preserve s mmhash128_a(sizeof(s), pointer(s), seed)
+        end
     end
 end
 
@@ -32,7 +38,14 @@ _hash(seed)          = last(mmhash128_a(seed%UInt32)) + seed
 # Optimized for hashing a UTF-8 compatible aligned string
 _hash(str, seed)     = last(mmhash128(str, seed%UInt32)) + seed
 # For hashing generic abstract strings as if UTF-8 encoded
-_hash_abs(str, seed) = last(mmhash128_c(str, seed%UInt32)) + seed
+@static if sizeof(Int) == 8
+    _hash_abs(str, seed) = last(mmhash128_c(str, seed%UInt32)) + seed
+else
+    function _hash_abs(str, seed)
+        s = string(str)
+        @preserve s last(mmhash128_a(sizeof(s), pointer(s), seed%UInt32)) + seed
+    end
+end
 
 hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str} =
     isempty(str) ? _hash(seed + Base.memhash_seed) : _hash_abs(str, seed + Base.memhash_seed)
