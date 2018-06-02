@@ -45,17 +45,16 @@ build_script:
       mit = \"ModuleInterfaceTools\"; mh3 = \"MurmurHash3\";
       la = (\"StrAPI\", \"CharSetEncodings\", \"ChrBase\");
       if VERSION < v\"0.7.0-DEV.5183\";
-          cln = Pkg.clone;
-          cln(\"$loc/$mit.jl\", mit);
-          cln(\"$loc/$mh3.jl\", mh3);
+          Pkg.clone(\"$loc/$mit.jl\", mit);
+          Pkg.clone(\"$loc/$mh3.jl\", mh3);
           for n in la; Pkg.add(n); end;
-          cln(pwd(), pkg)"
+          Pkg.clone(pwd(), pkg);
       else;
           using Pkg;
-          cln(a,b) = Pkg.add(a);
-          cln(\"$loc/$mit.jl#master\", mit);
-          cln(\"$loc/$mh3.jl#master\", mh3);
-      end;
+          Pkg.add(\"$loc/$mit.jl\");
+          Pkg.add(\"$loc/$mh3.jl\");
+          Pkg.up();
+      end"
 
 test_script:
   - C:\projects\julia\bin\julia -e "Pkg.test(\"StrBase\")"
