@@ -311,9 +311,13 @@ function unsafe_check_string(str::T;
     _ret_check(totalchar, flags, invalids, latin1byte, num2byte, num3byte, num4byte)
 end
 
-@inline function skipascii(beg::Ptr{UInt8}, fin::Ptr{UInt8})
+@inline function alignpnt(beg::Ptr)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    align, reinterpret(Ptr{UInt64}, align & (~CHUNKMSK)%UInt)
+end
+
+@inline function skipascii(beg::Ptr{UInt8}, fin::Ptr{UInt8})
+    align, pnt = alignpnt(beg)
     v = unsafe_load(pnt)
     (align &= CHUNKMSK) != 0 && (v &= ~_mask_bytes(align))
     while (pnt += CHUNKSZ) < fin
@@ -400,8 +404,7 @@ const msk_num2b_16 = 0xf800f800f800f800
 end
 
 @inline function skipbmp(beg::Ptr{UInt16}, fin, cnta, cntl, cnt2, cnt3)
-    align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    align, pnt = alignpnt(beg)
     v = unsafe_load(pnt)
     (align &= CHUNKMSK) != 0 && (v &= ~_mask_bytes(align))
     while (pnt += CHUNKSZ) < fin
@@ -571,8 +574,7 @@ end
 @inline _count_mask_al(pnt, siz, msk) = _count_mask_al(pnt, siz, msk, unsafe_load(pnt))
 
 @inline function _count_mask_ul(beg, siz, msk)
-    align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    align, pnt = alignpnt(beg)
     v = unsafe_load(pnt)
     if (align &= CHUNKMSK) != 0
         v &= ~_mask_bytes(align)
