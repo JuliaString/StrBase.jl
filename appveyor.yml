@@ -51,9 +51,7 @@ build_script:
           Pkg.clone(pwd(), pkg);
       else;
           using Pkg;
-          Pkg.add(\"$loc/$mit.jl\");
-          Pkg.add(\"$loc/$mh3.jl\");
-          Pkg.up();
+          cln(a) = Pkg.add(\"$loc/$a.jl\"); cln(mit); cln(mh3); for n in la; cln(n); end;
       end"
 
 test_script:
