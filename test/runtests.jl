@@ -3,9 +3,9 @@
 
 using ModuleInterfaceTools
 
-@api test StrAPI, CharSetEncodings, ChrBase, StrBase
+@static V6_COMPAT || (using Pkg; using Random)
 
-@static V6_COMPAT || (using Random)
+@api test StrAPI, CharSetEncodings, ChrBase, StrBase
 
 # Add definitions not present in v0.6.2 for GenericString
 @static if V6_COMPAT

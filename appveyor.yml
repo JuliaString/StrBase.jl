@@ -41,18 +41,12 @@ build_script:
 # Need to convert from shallow to complete for Pkg.clone to work
   - IF EXIST .git\shallow (git fetch --unshallow)
   - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using InteractiveUtils);
-      versioninfo(); pkg = \"StrBase\"; loc = \"https://github.com/JuliaString\";
-      mit = \"ModuleInterfaceTools\"; mh3 = \"MurmurHash3\";
-      la = (\"StrAPI\", \"CharSetEncodings\", \"ChrBase\");
-      if VERSION < v\"0.7.0-DEV.5183\";
-          Pkg.clone(\"$loc/$mit.jl\", mit);
-          Pkg.clone(\"$loc/$mh3.jl\", mh3);
-          for n in la; Pkg.add(n); end;
-          Pkg.clone(pwd(), pkg);
+      versioninfo();
+      if VERSION < v\"0.7.0-DEV.5183\"; Pkg.clone(pwd(), \"StrBase\");
       else;
-          using Pkg;
-          cln(a) = Pkg.add(\"$loc/$a.jl\"); cln(mit); cln(mh3); for n in la; cln(n); end;
+         using Pkg; Pkg.up();
+         cb=\"ChrBase\"; Pkg.rm(cb); Pkg.add(\"https://github.com/JuliaString/$cb.jl\");
       end"
 
 test_script:
-  - C:\projects\julia\bin\julia -e "Pkg.test(\"StrBase\")"
+  - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using Pkg); Pkg.test(\"StrBase\")"
