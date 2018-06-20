@@ -277,22 +277,15 @@ function Str(vec::AbstractArray{T}) where {CS,BT,T<:Chr{CS,BT}}
 end
 
 """Convert to a UniStr if valid Unicode, otherwise return a Text1Str"""
-function unsafe_str(str::Union{Vector{UInt8}, T, SubString{T}};
-                    accept_long_null  = false,
-                    accept_surrogates = false,
-                    accept_long_char  = false,
-                    accept_invalids   = true
-                    ) where {T <: Union{BinaryStr, Text1Str, String}}
+function unsafe_str end
+
+function _unsafe_str8(::Type{T}, str; keywords...) where {T}
     # handle zero length string quickly
     (siz = sizeof(str)) == 0 && return empty_ascii
     @preserve str begin
         pnt = pointer(str)::Ptr{UInt8}
         len, flags, num4byte, num3byte, num2byte, latin1byte, invalids =
-            unsafe_check_string(pnt, 1, siz;
-                                accept_long_null  = accept_long_null,
-                                accept_surrogates = accept_surrogates,
-                                accept_long_char  = accept_long_char,
-                                accept_invalids   = accept_invalids)
+            unsafe_check_string(pnt, 1, siz; keywords...)
         if flags == 0
             # Don't allow this to be aliased to a mutable Vector{UInt8}
             safe_copy(T, ASCIICSE, str)
@@ -308,21 +301,19 @@ function unsafe_str(str::Union{Vector{UInt8}, T, SubString{T}};
     end
 end
 
-"""Convert to a UniStr if valid Unicode, otherwise return a Text1Str/Text2Str/Text4Str"""
+unsafe_str(str::Vector{UInt8}; accept_invalids=true, kwargs...) =
+    _unsafe_str8(Vector{UInt8}, str; accept_invalids=accept_invalids, kwargs...)
+
+unsafe_str(str::MaybeSub{T}; accept_invalids=true, kwargs...
+                    ) where {T<:Union{String,Text1Str,ASCIIStr,BinaryStr}} =
+    _unsafe_str8(T, str; accept_invalids = accept_invalids, kwargs...)
+
 function unsafe_str(str::Union{MaybeSub{<:AbstractString},AbstractArray{T}};
-                    accept_long_null  = false,
-                    accept_surrogates = false,
-                    accept_long_char  = false,
-                    accept_invalids   = true
-                    ) where {T<:Union{AbstractChar,CodeUnitTypes}}
+                    accept_invalids = true, kwargs...) where {T<:Union{AbstractChar,UInt16,UInt32}}
     # handle zero length string quickly
     is_empty(str) && return empty_ascii
     len, flags, num4byte, num3byte, num2byte, latin1byte, invalids =
-        unsafe_check_string(str;
-                            accept_long_null  = accept_long_null,
-                            accept_surrogates = accept_surrogates,
-                            accept_long_char  = accept_long_char,
-                            accept_invalids   = accept_invalids)
+        unsafe_check_string(str; accept_invalids   = accept_invalids, kwargs...)
     if flags == 0
         Str(ASCIICSE, _cvtsize(UInt8, str, len))
     elseif invalids != 0
