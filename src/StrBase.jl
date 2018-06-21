@@ -11,7 +11,7 @@ module StrBase
 
 using ModuleInterfaceTools
 
-@api extend! StrAPI, CharSetEncodings, ChrBase
+@api extend! ChrBase
 
 # Public Types
 
