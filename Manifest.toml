@@ -1,0 +1,47 @@
+[[CharSetEncodings]]
+deps = ["InteractiveUtils", "ModuleInterfaceTools", "Pkg", "StrAPI"]
+git-tree-sha1 = "988b107e7bc93aa2f62317cb1cb569503d73f2ae"
+uuid = "cb9422de-a9d8-5b68-86db-ff05833ab307"
+version = "0.1.3"
+
+[[ChrBase]]
+deps = ["CharSetEncodings", "InteractiveUtils", "ModuleInterfaceTools", "Pkg", "Random", "StrAPI"]
+git-tree-sha1 = "6870494c48b1a017479793f1bf547c55a46f0bb5"
+uuid = "c13fa7b1-fb91-5a40-8b3c-3aad7fd30002"
+version = "0.1.2"
+
+[[InteractiveUtils]]
+uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+
+[[ModuleInterfaceTools]]
+deps = ["InteractiveUtils", "Pkg", "Test", "UUIDs"]
+git-tree-sha1 = "a42d366ae922a2f25435ceb87c1b807ba6a724ba"
+uuid = "5cb8414e-7aab-5a03-a681-351269c074bf"
+version = "0.1.3"
+
+[[MurmurHash3]]
+deps = ["InteractiveUtils", "Pkg", "Test"]
+git-tree-sha1 = "adaf2bf2bd12872bc4c7a9763fb0edbcd91f9a5a"
+uuid = "b10b62ed-fbae-5ea5-b934-abaf0477b71d"
+version = "0.1.3"
+
+[[Pkg]]
+uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+
+[[Random]]
+uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[[StrAPI]]
+deps = ["InteractiveUtils", "ModuleInterfaceTools", "Pkg", "Random"]
+git-tree-sha1 = "b905011d68af46965c9e89594d7d217153a742e1"
+uuid = "69e7dfc3-c4d0-5e14-8d95-d6042a05b383"
+version = "0.1.2"
+
+[[Test]]
+uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[UUIDs]]
+uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[[Unicode]]
+uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"

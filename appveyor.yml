@@ -40,8 +40,21 @@ install:
 build_script:
 # Need to convert from shallow to complete for Pkg.clone to work
   - IF EXIST .git\shallow (git fetch --unshallow)
-  - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using Pkg, InteractiveUtils);
-      versioninfo(); Pkg.clone(pwd(), \"StrBase\")"
+#  - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using Pkg, InteractiveUtils);
+#      versioninfo(); Pkg.clone(pwd(), \"StrBase\")"
+   - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using Pkg, InteractiveUtils);
+       versioninfo(); loc=\"https://github.com/JuliaString\"
+       lc=[\"ModuleInterfaceTools\", \"StrAPI\", \"CharSetEncodings\", \"ChrBase\"];
+       if VERSION < v\"0.7.0-DEV.5183\"
+           for pkg in lc; Pkg.clone(\"$loc/$pkg.jl\"); Pkg.checkout(pkg, \"master\"); end;
+           Pkg.clone(pwd());
+           Pkg.test(\"StrBase\"; coverage=true);
+       else;
+           for pkg in lc; Pkg.add(\"$loc/$pkg.jl\"); end;
+           using UUIDs; p = \"Project.toml"; uuid = \"e79e7a6a-7bb1-5a4d-9d64-da657b06f53a\";
+           write(p, replace(read(p, String), uuid => uuid4()));
+           Pkg.up(); Pkg.test(; coverage=true);
+       end"
 
 test_script:
   - C:\projects\julia\bin\julia -e "VERSION < v\"0.7.0-DEV\" || (using Pkg); Pkg.test(\"StrBase\")"
