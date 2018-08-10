@@ -71,10 +71,13 @@ mutable struct CharStr <: AbstractString
     chars::Vector{Char}
     CharStr(x) = new(collect(x))
 end
-start(x::CharStr) = 1
-next(x::CharStr, i::Int) = @static NEW_ITERATE ? iterate(x.chars, i) : next(x.chars, i)
-done(x::CharStr, i::Int) = i > length(x.chars)
-@static NEW_ITERATE && (iterate(x::CharStr, i::Int=1) = iterate(x.chars, i))
+@static if NEW_ITERATE
+    literate(x::CharStr, i::Int=1) = iterate(x.chars, i)
+else
+    start(x::CharStr) = 1
+    next(x::CharStr, i::Int) = next(x.chars, i)
+    done(x::CharStr, i::Int) = i > length(x.chars)
+end
 
 lastindex(x::CharStr) = lastindex(x.chars)
 ncodeunits(x::CharStr) = lastindex(x.chars)

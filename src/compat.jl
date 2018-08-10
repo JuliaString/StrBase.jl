@@ -40,6 +40,15 @@ function Base.lstrip(s::AbstractString, chars::_Chars)
     SubString(s, e+1, e)
 end
 
+@static if NEW_ITERATE
+using Iterators
+function Base.rstrip(f, s::AbstractString)
+    for (i, c) in Iterators.reverse(pairs(s))
+        f(c) || return SubString(s, 1, i)
+    end
+    SubString(s, 1, 0)
+end
+else
 function Base.rstrip(s::AbstractString, chars::_Chars)
     r = RevString(s)
     i = start(r)
@@ -49,6 +58,7 @@ function Base.rstrip(s::AbstractString, chars::_Chars)
         i = j
     end
     s[1:0]
+end
 end
 
 Base.strip(s::AbstractString, chars::_Chars) = lstrip(rstrip(s, chars), chars)
