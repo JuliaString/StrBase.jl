@@ -29,10 +29,7 @@ matrix:
 
 ## uncomment the following lines to override the default test script
 script:
-#  - julia -e 'if VERSION < v"0.7.0-DEV.5183"; Pkg.clone(pwd()); else; using Pkg; Pkg.add(pwd()); Pkg.up(); end; Pkg.test("StrBase"; coverage=true)'
-#  - julia -e 'lc=["ModuleInterfaceTools", "CharSetEncodings", "ChrBase"];loc="https://github.com/JuliaString";if VERSION < v"0.7.0-DEV.5183" ; for pkg in lc; Pkg.clone("$loc/$pkg.jl"); Pkg.checkout(pkg, "master"); end; Pkg.clone(pwd()); Pkg.test("StrBase"; coverage=true); else; import Pkg; for pkg in lc; Pkg.add("$loc/$pkg.jl"); end; using UUIDs; p = "Project.toml"; uuid = "e79e7a6a-7bb1-5a4d-9d64-da657b06f53a"; write(p, replace(read(p, String), uuid => uuid4())); Pkg.up(); Pkg.test(; coverage=true); end'
+
 after_success:
-  # push coverage results to Coveralls
-  - julia -e 'VERSION < v"0.7.0-DEV" || (using Pkg); cd(Pkg.dir("StrBase")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
-  # push coverage results to Codecov
-  - julia -e 'VERSION < v"0.7.0-DEV" || (using Pkg); cd(Pkg.dir("StrBase")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  # push coverage results to Coveralls & Codecov
+  - julia -e 'VERSION < v"0.7.0-DEV" || (using Pkg); cd(Pkg.dir("StrBase")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder()); Codecov.submit(Codecov.process_folder())'
