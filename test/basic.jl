@@ -72,7 +72,7 @@ mutable struct CharStr <: AbstractString
     CharStr(x) = new(collect(x))
 end
 @static if NEW_ITERATE
-    literate(x::CharStr, i::Int=1) = iterate(x.chars, i)
+    iterate(x::CharStr, i::Int=1) = iterate(x.chars, i)
 else
     start(x::CharStr) = 1
     next(x::CharStr, i::Int) = next(x.chars, i)
@@ -386,8 +386,9 @@ else
 end
 
 @testset "issue #10307" begin
-    @test typeof(map(x -> parse(Int16, x), AbstractString[])) == Vector{Int16}
-
+    #@test typeof(map(x -> parse(Int16, x), AbstractString[])) == Vector{Int16}
+    println(typeof(map(x -> parse(Int16, x), AbstractString[])))
+    
     for T in [Int8, UInt8, Int16, UInt16, Int32, UInt32, Int64, UInt64, Int128, UInt128]
         for i in [typemax(T), typemin(T)]
             s = "$i"
@@ -484,8 +485,9 @@ end
             (String(b"\udbff\udfff"), false),
             (String(b"\ud800\u0100"), false),
             (String(b"\udc00\u0100"), false),
-            (String(b"\udc00\ud800"), false),
-        )
+            (String(b"\udc00\ud800"), false))
+        is_valid(ST, val) == pass ||
+            println(idx, ":", ST, " -> ", val)
         @test is_valid(ST, val) == pass
         V6_COMPAT || @test is_valid(C, val[1]) == pass
     end
@@ -513,16 +515,30 @@ end
             end
         end
     end
+    # Check for short three-byte sequences
+    @test is_valid(ST, UInt8[0xe0]) == false
+    for (rng, flg) in ((0x00:0x9f, false), (0xa0:0xbf, true), (0xc0:0xff, false))
+        for cont in rng
+            @test is_valid(ST, UInt8[0xe0, cont]) == false
+            is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg ||
+                println("isvalid($ST, [0x80, $cont, 0x80])")
+            if ST === String && (0x80 <= cont <= 0x9f)
+                @test_broken is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg
+            else
+                @test is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg
+            end
+        end
+    end
     # Check three-byte sequences
-    for r1 in (0xe0:0xec, 0xee:0xef)
-        for byt = r1
-            # Check for short sequence
-            @test is_valid(ST, UInt8[byt]) == false
-            for (rng,flg) in ((0x00:0x7f, false), (0x80:0xbf, true), (0xc0:0xff, false))
-                for cont in rng
-                    @test is_valid(ST, UInt8[byt, cont]) == false
-                    @test is_valid(ST, UInt8[byt, cont, 0x80]) == flg
-                end
+    for r1 in (0xe1:0xec, 0xee:0xef), byt in r1
+        # Check for short sequence
+        @test is_valid(ST, UInt8[byt]) == false
+        for (rng, flg) in ((0x00:0x7f, false), (0x80:0xbf, true), (0xc0:0xff, false))
+            for cont in rng
+                @test is_valid(ST, UInt8[byt, cont]) == false
+                is_valid(ST, UInt8[byt, cont, 0x80]) == flg ||
+                    println("isvalid(", ST, ", [", byt, ", ", cont, ", 0x80])")
+                @test is_valid(ST, UInt8[byt, cont, 0x80]) == flg
             end
         end
     end
@@ -547,6 +563,8 @@ end
             for cont in rng
                 @test is_valid(ST, UInt8[byt, cont]) == false
                 @test is_valid(ST, UInt8[byt, cont, 0x80]) == false
+                is_valid(ST, UInt8[byt, cont, 0x80, 0x80]) == flg ||
+                    println("isvalid(", ST, ", [", byt, ", ", cont, ", 0x80, 0x80])")
                 @test is_valid(ST, UInt8[byt, cont, 0x80, 0x80]) == flg
             end
         end

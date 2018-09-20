@@ -23,7 +23,7 @@ using ModuleInterfaceTools
 
 @api develop! check_string, unsafe_check_string, fast_check_string, skipascii, skipbmp,
               countmask, count_chars, _count_mask_al, _count_mask_ul, count_latin,
-              byte_string_classify, _copysub, _cvtsize, _repeat, empty_str, _data, _pnt64, _str,
+              _copysub, _cvtsize, _repeat, empty_str, _data, _pnt64, _str,
               ValidatedStyle, MutableStyle, EqualsStyle, CanContain
 
 @api develop LineCounts, CharTypes, CharStat, maxbit, calcstats, check_continuation,

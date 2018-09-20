@@ -48,27 +48,30 @@ function parseint_preamble(signed::Bool, base::Int, s::T, startpos::Int, endpos:
     return sgn, base, j
 end
 
+endparse(str::String, raise::Bool, err) = raise ? throw(err(str)) : nothing
+endparse(str::String, raise::Bool) = endparse(str,raise, ArgumentError)
+
+@inline _rs(str, startpos, endpos) = repr(SubString(str, startpos, endpos))
+
+function tryparse_internal(::Type{BigInt}, s::S, startpos::Int, endpos::Int,
+                           base_::Integer, raise::Bool) where {S<:Str}
+    str = convert(String, SubString(s, startpos, endpos))
+    Base.tryparse_internal(BigInt, str, 1, lastindex(str), base_, raise)
+end
+
 function tryparse_internal(::Type{T}, s::S, startpos::Int, endpos::Int,
                            base_::Integer, raise::Bool) where {T<:Integer, S<:Str}
     C = eltype(S)
     sgn, base, i = parseint_preamble(T<:Signed, Int(base_), s, startpos, endpos)
-    if sgn == 0 && base == 0 && i == 0
-        raise && throw(ArgumentError("input string is empty or only contains whitespace"))
-        return nothing
-    end
-    if !(2 <= base <= 62)
-        raise && throw(ArgumentError("invalid base: base must be 2 ≤ base ≤ 62, got $base"))
-        return nothing
-    end
-    if i == 0
-        raise && throw(ArgumentError("premature end of integer: $(repr(SubString(s,startpos,endpos)))"))
-        return nothing
-    end
+    sgn == 0 && base == 0 && i == 0 &&
+        return endparse("input string is empty or only contains whitespace", raise)
+    (2 <= base <= 62) ||
+        return endparse("invalid base: base must be 2 ≤ base ≤ 62, got $base", raise)
+    i == 0 &&
+        return endparse("premature end of integer: " * _rs(s, startpos, endpos), raise)
     c, i = parseint_iterate(s,i,endpos)
-    if i == 0
-        raise && throw(ArgumentError("premature end of integer: $(repr(SubString(s,startpos,endpos)))"))
-        return nothing
-    end
+    i == 0 &&
+        return endparse("premature end of integer: " * _rs(s, startpos, endpos), raise)
 
     base = convert(T,base)
     m::T = div(typemax(T)-base+1,base)
@@ -78,10 +81,9 @@ function tryparse_internal(::Type{T}, s::S, startpos::Int, endpos::Int,
         d::T = '0' <= c <= '9' ? c-'0'    :
                'A' <= c <= 'Z' ? c-'A'+10 :
                'a' <= c <= 'z' ? c-'a'+a  : base
-        if d >= base
-            raise && throw(ArgumentError("invalid base $base digit $(repr(c)) in $(repr(SubString(s,startpos,endpos)))"))
-            return nothing
-        end
+        d >= base &&
+            return endparse("invalid base $base digit $(repr(c)) in " * _rs(s,startpos,endpos),
+                            raise)
         n *= base
         n += d
         if i > endpos
@@ -96,27 +98,23 @@ function tryparse_internal(::Type{T}, s::S, startpos::Int, endpos::Int,
         d::T = '0' <= c <= '9' ? c-'0'    :
         'A' <= c <= 'Z' ? c-'A'+10 :
             'a' <= c <= 'z' ? c-'a'+a  : base
-        if d >= base
-            raise && throw(ArgumentError("invalid base $base digit $(repr(c)) in $(repr(SubString(s,startpos,endpos)))"))
-            return nothing
-        end
+        d >= base &&
+            return endparse("invalid base $base digit $(repr(c)) in " * _rs(s, startpos, endpos),
+                            raise)
         (T <: Signed) && (d *= sgn)
 
         n, ov_mul = mul_with_overflow(n, base)
         n, ov_add = add_with_overflow(n, d)
-        if ov_mul | ov_add
-            raise && throw(OverflowError("overflow parsing $(repr(SubString(s,startpos,endpos)))"))
-            return nothing
-        end
+        (ov_mul | ov_add) &&
+            return endparse("overflow parsing " * _rs(s,startpos,endpos), raise, OverflowError)
         (i > endpos) && return n
         c, i = iterate(s,i)::Tuple{C, Int}
     end
     while i <= endpos
         c, i = iterate(s,i)::Tuple{C, Int}
-        if !isspace(c)
-            raise && throw(ArgumentError("extra characters after whitespace in $(repr(SubString(s,startpos,endpos)))"))
-            return nothing
-        end
+        isspace(c) ||
+            return endparse("extra characters after whitespace in " * _rs(s,startpos,endpos),
+                            raise)
     end
     return n
 end

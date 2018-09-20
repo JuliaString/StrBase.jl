@@ -13,21 +13,16 @@ Based in part on code for UTF8String that used to be in Julia
 @inline checkcont(pnt) = is_valid_continuation(get_codeunit(pnt))
 
 # Get rest of character ch from 2-byte UTF-8 sequence at pnt - 1
-@inline get_utf8_2byte(pnt, ch) =
-    (((ch & 0x1f)%UInt16 << 6) | (get_codeunit(pnt) & 0x3f))
+@inline get_utf8_2byte(pnt, ch) = _mskup16(ch, 0x1f, 6) | (get_codeunit(pnt) & 0x3f)
 
 # Get rest of character ch from 3-byte UTF-8 sequence at pnt - 2
 @inline get_utf8_3byte(pnt, ch) =
-    (((ch & 0xf)%UInt16 << 12)
-     | ((get_codeunit(pnt - 1)%UInt16 & 0x3f) << 6)
-     | (get_codeunit(pnt) & 0x3f))
+    _mskup16(ch, 0xf, 12) | _mskup16(get_codeunit(pnt - 1), 0x3f, 6) | (get_codeunit(pnt) & 0x3f)
 
 # Get rest of character ch from 4-byte UTF-8 sequence at pnt - 3
 @inline get_utf8_4byte(pnt, ch) =
-    (((ch & 0x7)%UInt32 << 18)
-     | ((get_codeunit(pnt - 2)%UInt32 & 0x3f) << 12)
-     | ((get_codeunit(pnt - 1)%UInt32 & 0x3f) << 6)
-     | (get_codeunit(pnt) & 0x3f))
+    _mskup32(ch, 0x7, 18) | _mskup32(get_codeunit(pnt-2), 0x3f, 12) |
+    _mskup32(get_codeunit(pnt-1), 0x3f, 6) | (get_codeunit(pnt) & 0x3f)
 
 # Output a character as a 2-byte UTF-8 sequence
 @inline function output_utf8_2byte!(pnt, ch)
@@ -253,6 +248,8 @@ is_bmp(str::Str{<:Union{Text4CSE,UTF32CSE}}) =
 
 is_unicode(str::MS_UTF8) = true
 
+is_unicode(dat::Vector{UInt8}) = @preserve dat _check_utf8_al(sizeof(dat), pointer(dat)) >= 0
+
 is_unicode(str::String) = @preserve str _check_utf8_al(ncodeunits(str), pointer(str)) >= 0
 is_unicode(str::SubString{String}) = @preserve str _check_utf8(ncodeunits(str), pointer(str)) >= 0
 
@@ -281,7 +278,7 @@ function _check_utf8_rest(pnt, fin, ch)
             pnt + 1 < fin || break
             b2 = get_codeunit(pnt)     ; is_valid_continuation(b2) || break
             b3 = get_codeunit(pnt + 1) ; is_valid_continuation(b3) || break
-            wrd = ((ch & 0x0f)%UInt32 << 12) | ((b2 & 0x3f)%UInt32 << 6) | (b3 & 0x3f)
+            wrd = _mskup32(ch, 0x0f, 12) | _mskup32(b2, 0x3f, 6) | (b3 & 0x3f)
             # check for surrogate pairs, make sure correct
             (wrd < 0x0800 || is_surrogate_codeunit(wrd)) && break
             pnt += 2
@@ -291,9 +288,8 @@ function _check_utf8_rest(pnt, fin, ch)
             b2 = get_codeunit(pnt)     ; is_valid_continuation(b2) || break
             b3 = get_codeunit(pnt + 1) ; is_valid_continuation(b3) || break
             b4 = get_codeunit(pnt + 2) ; is_valid_continuation(b4) || break
-            (((ch & 0x07)%UInt32 << 18) | ((b2 & 0x3f)%UInt32 << 12) |
-             ((b3 & 0x3f)%UInt32 << 6) | (b4 & 0x3f)) - 0x10000 < 0x100000 ||
-             break
+            (_mskup32(ch, 0x7, 18) | _mskup32(b2, 0x3f, 12) | _mskup32(b3, 0x3f, 6) |
+             (b4 & 0x3f)) - 0x10000 < 0x100000 || break
             pnt += 3
         else
             break
@@ -303,7 +299,7 @@ function _check_utf8_rest(pnt, fin, ch)
             pnt < fin || return C_NULL
             ch = get_codeunit(pnt)
             pnt += 1
-            ch < 0x7f || break
+            ch > 0x7f && break
         end
     end
     pnt
@@ -585,7 +581,7 @@ end
                 out += 3
             else
                 # Pick up surrogate pairs (CESU-8 format)
-                ch32 = (((ch & 0x3f)%UInt32 << 16) | (get_ch(pnt + 1) << 10)) +
+                ch32 = (_mskup32(ch, 0x3f, 16) | (get_ch(pnt + 1) << 10)) +
                     (get_ch(pnt + 3) << 6 | get_ch(pnt + 4)) - 0x01f0c00
                 pnt += 4
                 out = output_utf8_4byte!(out, ch32)

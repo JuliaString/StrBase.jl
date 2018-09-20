@@ -22,7 +22,7 @@ const UTF_INVALID   = 64  ##< invalid sequences present
     elseif !flag
         strerror(StrErrors.CONT, pos, byt)
     end
-    (ch%UInt32 << 6) | (byt & 0x3f), pos, flag
+    ((ch%UInt32) << 6) | (byt & 0x3f), pos, flag
 end
 
 """
@@ -630,20 +630,10 @@ function check_string(dat, startpos, endpos = lastindex(dat); kwargs...)
     unsafe_check_string(dat, startpos, endpos; kwargs...)
 end
 
-byte_string_classify(data) =
-    ccall(:u8_isvalid, Int32, (Ptr{UInt8}, Int), data, length(data))
-byte_string_classify(data::Vector{UInt8}) =
-    ccall(:u8_isvalid, Int32, (Ptr{UInt8}, Int), data, length(data))
-byte_string_classify(s::Str{<:Byte_CSEs}) = byte_string_classify(s.data)
-    # 0: neither valid ASCII nor UTF-8
-    # 1: valid ASCII
-    # 2: valid UTF-8
-
 is_unicode(arr::AbstractArray{<:CodeUnitTypes}) =
     (try check_string(arr) ; catch ; return false ; end ; true)
 
 is_valid(::Type{<:Str{ASCIICSE}},  s::Vector{UInt8}) = is_ascii(s)
-is_valid(::Type{<:Str{UTF8CSE}},   s::Vector{UInt8}) = byte_string_classify(s) != 0
 is_valid(::Type{<:Str{LatinCSE}},  s::Vector{UInt8}) = true
 # This should be optimized, stop at first character > 0x7f
 is_valid(::Type{<:Str{_LatinCSE}}, s::Vector{UInt8}) = !is_ascii(s)

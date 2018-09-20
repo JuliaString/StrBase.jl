@@ -45,7 +45,7 @@ end
     b2 = get_codeunit(pnt-1)
     b3 = get_codeunit(pnt)
     is_valid_continuation(b2) && is_valid_continuation(b3) &&
-        !is_surrogate_codeunit(((cu & 0x0f)%UInt32 << 12) | ((b2 & 0x3f)%UInt32 << 6) | (b3 & 0x3f))
+        !is_surrogate_codeunit(_mskup32(cu, 0xf, 12) | _mskup32(b2, 0x3f, 6) | (b3 & 0x3f))
 end
 
 function is_bmp(str::MaybeSub{String})

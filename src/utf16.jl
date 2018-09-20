@@ -462,7 +462,7 @@ function convert(::Type{Vector{UInt16}}, str::Str{<:Word_CSEs})
 end
 
 # Todo: Some of these need to be fixed to account for SubStr, when that is added
-convert(::Type{T},  str::MaybeSub{T}) where {T<:Str{<:Union{UCS2_CSEs, UTF32_CSEs}}} = str
+#convert(::Type{T},  str::MaybeSub{T}) where {T<:Str{<:Union{UCS2_CSEs, UTF32_CSEs}}} = str
 convert(::Type{<:Str{UTF16CSE}}, str::MaybeSub{<:Str{<:UCS2_CSEs}}) = Str(UTF16CSE, str.data)
 
 function convert(::Type{<:Str{UTF16CSE}}, dat::AbstractArray{UInt16})

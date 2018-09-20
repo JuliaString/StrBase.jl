@@ -252,12 +252,11 @@ convert(::Type{T}, ch::Signed) where {T<:Str} = ch < 0 ? ncharerr(ch) : convert(
 Str(str::SubString{<:Str{C}}) where {C<:Byte_CSEs} =
     Str(C, unsafe_string(pointer(str.string, str.offset+1), str.ncodeunits))
 
-const _Bytes = Union{UInt8,Int8}
-
 # don't make unnecessary copies when passing substrings to C functions
-cconvert(::Type{Ptr{T}}, str::SubString{<:Str{<:Byte_CSEs}}) where {T<:_Bytes} = str
-cconvert(::Type{Ptr{UInt16}}, str::SubString{<:Str{<:Word_CSEs}}) = str
-cconvert(::Type{Ptr{UInt32}}, str::SubString{<:Str{<:Quad_CSEs}}) = str
+cconvert(::Type{Ptr{Int8}}, str::SubString{<:Str{<:Byte_CSEs}})   = convert(String, str)
+cconvert(::Type{Ptr{UInt8}}, str::SubString{<:Str{<:Byte_CSEs}})  = convert(String, str)
+cconvert(::Type{Ptr{UInt16}}, str::SubString{<:Str{<:Word_CSEs}}) = convert(String, str)
+cconvert(::Type{Ptr{UInt32}}, str::SubString{<:Str{<:Quad_CSEs}}) = convert(String, str)
 
 unsafe_convert(::Type{Ptr{Int8}},   s::MaybeSub{<:Str{<:Byte_CSEs}}) =
     reinterpret(Ptr{Int8}, pointer(s))

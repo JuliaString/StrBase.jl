@@ -20,6 +20,14 @@ struct Str{T,SubStr,Cache,Hash} <: AbstractString
         new{T,S,C,H}(v,s,c,h)
 end
 
+_msk16(v, m) = (v%UInt16) & m
+_msk32(v, m) = (v%UInt32) & m
+
+_mskup16(v, m, s) = _msk16(v, m) << s
+_mskup32(v, m, s) = _msk32(v, m) << s
+_mskdn16(v, m, s) = _msk16(v, m) >>> s
+_mskdn32(v, m, s) = _msk32(v, m) >>> s
+
 (::Type{Str})(::Type{C}, v::String) where {C<:CSE} = Str(C, v, nothing, nothing, nothing)
 (::Type{Str})(::Type{C}, v::Str) where {C<:CSE} = Str(C, v.data, nothing, nothing, nothing)
 
@@ -134,7 +142,7 @@ ncodeunits(s::Str{<:Quad_CSEs}) = sizeof(s) >>> 2
 # For convenience
 @inline _calcpnt(str, siz) = (pnt = _pnt64(str) - CHUNKSZ;  (pnt, pnt + siz))
 
-@inline _mask_bytes(n) = (1%UInt << ((n & CHUNKMSK) << 3)) - 0x1
+@inline _mask_bytes(n) = ((1%UInt) << ((n & CHUNKMSK) << 3)) - 0x1
 
 # Support for SubString of Str
 

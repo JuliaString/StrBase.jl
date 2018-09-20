@@ -45,7 +45,7 @@ alignedtype(::Type{UInt32_S})  = UInt32_S
 alignedtype(::Type{UInt32_US}) = UInt32_S
 
 @inline _ul(pnt::Ptr{T}, shift) where {T} =
-    unsafe_load(reinterpret(Ptr{UInt8}, pnt))%basetype(T) << shift
+    (unsafe_load(reinterpret(Ptr{UInt8}, pnt))%basetype(T)) << shift
 
 @inline _load(pnt::Ptr{T}) where {T<:Union{UInt16_US,UInt32_US}} =
     bswap(unsafe_load(reinterpret(Ptr{basetype(T)}, pnt)))
