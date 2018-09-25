@@ -116,27 +116,27 @@ Base._split(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
 Base._rsplit(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
     __rsplit(str, splitter, limit, keepempty, vec)
 
-split(str::MaybeSub{<:Str{C}}, splitter;
-      limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) where {C<:CSE} =
-    __split(str, splitter, limit, checkkeep(keepempty, keep, :split), splitarr(C))
+split(str::MaybeSub{<:Str}, splitter;
+      limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
+    __split(str, splitter, limit, checkkeep(keepempty, keep, :split), splitarr(str))
 
-split(str::MaybeSub{<:Str{C}}, splitter::AbstractChar;
-      limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) where {C<:CSE} =
-    __split(str, isequal(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(C))
+split(str::MaybeSub{<:Str}, splitter::AbstractChar;
+      limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
+    __split(str, isequal(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(str))
 
-split(str::MaybeSub{<:Str{C}}, splitter::SetOfChars;
-      limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) where {C<:CSE} =
-    __split(str, in(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(C))
+split(str::MaybeSub{<:Str}, splitter::SetOfChars;
+      limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
+    __split(str, in(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(str))
 
-rsplit(str::MaybeSub{<:Str{C}}, splitter;
-       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) where {C<:CSE} =
-    __rsplit(str, splitter, limit, checkkeep(keepempty, keep, :rsplit), splitarr(C))
-rsplit(str::MaybeSub{<:Str{C}}, splitter::AbstractChar;
-       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) where {C<:CSE} =
-    __rsplit(str, isequal(splitter), limit, checkkeep(keepempty, keep, :rsplit), splitarr(C))
-rsplit(str::MaybeSub{<:Str{C}}, splitter::SetOfChars;
-       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) where {C<:CSE} =
-    __rsplit(str, in(splitter), limit, checkkeep(keepempty, keep, :rsplit), splitarr(C))
+rsplit(str::MaybeSub{<:Str}, splitter;
+       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
+    __rsplit(str, splitter, limit, checkkeep(keepempty, keep, :rsplit), splitarr(str))
+rsplit(str::MaybeSub{<:Str}, splitter::AbstractChar;
+       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
+    __rsplit(str, isequal(splitter), limit, checkkeep(keepempty, keep, :rsplit), splitarr(str))
+rsplit(str::MaybeSub{<:Str}, splitter::SetOfChars;
+       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
+    __rsplit(str, in(splitter), limit, checkkeep(keepempty, keep, :rsplit), splitarr(str))
 
 # Todo: this is using print, but it should be changed to make sure that everything is done via
 # writes (i.e. no translation to UTF-8)
