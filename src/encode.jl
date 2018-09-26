@@ -59,12 +59,7 @@ function _str(str::T) where {T<:Union{Vector{UInt8}, Str{<:Binary_CSEs}, String}
     (siz = sizeof(str)) == 0 && return empty_ascii
     @preserve str begin
         pnt = pointer(str)
-        try
-            len, flags, num4byte, num3byte, num2byte, latin1byte = fast_check_string(pnt, siz)
-        catch ex
-            println("fast_check_string($str) failed:", sprint(showerror, ex, catch_backtrace()))
-            rethrow(ex)
-        end
+        len, flags, num4byte, num3byte, num2byte, latin1byte = fast_check_string(pnt, siz)
         if flags == 0
             buf, out = _allocate(UInt8, len)
             _memcpy(out, pnt, len)
