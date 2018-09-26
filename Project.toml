@@ -4,7 +4,7 @@ keywords = ["Strings"]
 license = "MIT"
 desc = "Basic functionality for Str types"
 authors = ["ScottPJones <scottjones@alum.mit.edu>"]
-version = "0.1.5"
+version = "0.1.6"
 
 [deps]
 CharSetEncodings = "cb9422de-a9d8-5b68-86db-ff05833ab307"
