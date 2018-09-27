@@ -345,7 +345,8 @@ function fast_check_string(beg::Ptr{UInt8}, len)
         elseif ch < 0xe0
             # 2-byte UTF-8 sequence (i.e. characters 0x80-0x7ff)
             (pnt += 1) < fin || strerror(StrErrors.SHORT, pnt - beg, ch)
-            (ch > 0xc1 && checkcont(pnt)) || strerror(StrErrors.INVALID, pnt - beg, ch)
+            checkcont(pnt) || strerror(StrErrors.INVALID, pnt - beg - 1, ch)
+            ch > 0xc1 || strerror(StrErrors.LONG, pnt - beg - 1, get_utf8_2byte(pnt, ch))
             ch > 0xc3 ? (num2byte += 1) : (latin1byte += 1)
         elseif ch < 0xf0
             # 3-byte UTF-8 sequence (i.e. characters 0x800-0xffff)
