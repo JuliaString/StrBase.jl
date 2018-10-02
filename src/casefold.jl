@@ -6,16 +6,18 @@ Licensed under MIT License, see LICENSE.md
 =#
 
 _wide_lower_l(c) = ifelse(c > (V6_COMPAT ? 0xdf : 0xde), c != 0xf7, c == 0xb5)
+
 @inline _wide_lower_ch(ch) =
     ch <= 0x7f ? _islower_a(ch) : (ch > 0xff ? _islower_u(ch) : _wide_lower_l(ch))
 
 @inline _isupper_ch(ch) =
-    ch <= 0x7f ? _isupper_a(ch) : (ch <= 0xff ? _isupper_l(ch) : _isupper_u(ch))
+    ch <= 0x7f ? _isupper_a(ch) : (ch > 0xff ? _isupper_u(ch) : _isupper_l(ch))
 
-_wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff) | (!V6_COMPAT & (ch == 0xdf))
+_wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff) | (!V6_COMPAT && (ch == 0xdf))
 
 _wide_out_upper(ch) =
-    ifelse(ch == 0xb5, 0x39c, ifelse(ch == 0xff, 0x178, ifelse(ch == 0xdf, 0x1e9e, ch%UInt16)))
+    ifelse(ch == 0xb5, 0x39c,
+           ifelse(ch == 0xff, 0x178, ifelse(!V6_COMPAT && ch == 0xdf, 0x1e9e, ch%UInt16)))
 
 
 function uppercase_first(str::MaybeSub{S}) where {C<:ASCIICSE,S<:Str{C}}
