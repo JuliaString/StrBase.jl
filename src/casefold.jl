@@ -5,6 +5,21 @@ Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
 
+_wide_lower_l(c) = ifelse(c > (V6_COMPAT ? 0xdf : 0xde), c != 0xf7, c == 0xb5)
+
+@inline _wide_lower_ch(ch) =
+    ch <= 0x7f ? _islower_a(ch) : (ch > 0xff ? _islower_u(ch) : _wide_lower_l(ch))
+
+@inline _isupper_ch(ch) =
+    ch <= 0x7f ? _isupper_a(ch) : (ch > 0xff ? _isupper_u(ch) : _isupper_l(ch))
+
+_wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff) | (!V6_COMPAT && (ch == 0xdf))
+
+_wide_out_upper(ch) =
+    ifelse(ch == 0xb5, 0x39c,
+           ifelse(ch == 0xff, 0x178, ifelse(!V6_COMPAT && ch == 0xdf, 0x1e9e, ch%UInt16)))
+
+
 function uppercase_first(str::MaybeSub{S}) where {C<:ASCIICSE,S<:Str{C}}
     (len = ncodeunits(str)) == 0 && return str
     @preserve str begin
@@ -109,12 +124,6 @@ function uppercase_first(str::MaybeSub{S}) where {C<:LatinCSE,S<:Str{C}}
     end
 end
 
-@static if V6_COMPAT
-    _wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff)
-else
-    _wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff) | (ch == 0xdf)
-end
-
 # Special handling for characters that can't map into Latin1
 function uppercase_first(str::MaybeSub{S}) where {C<:_LatinCSE,S<:Str{C}}
     (len = ncodeunits(str)) == 0 && return str
@@ -128,7 +137,7 @@ function uppercase_first(str::MaybeSub{S}) where {C<:_LatinCSE,S<:Str{C}}
             Str(C, buf)
         elseif _wide_lower_latin(ch)
             buf, out = _allocate(UInt16, len)
-            set_codeunit!(out, ifelse(ch == 0xb5, 0x39c, ifelse(ch == 0xff, 0x178, 0x1e9e)))
+            set_codeunit!(out, _wide_out_upper(ch))
             # Perform the widen operation on the rest (should be done via SIMD)
             @inbounds for i = 2:len
                 set_codeunit!(out += 2, get_codeunit(pnt += 2)%UInt16)
@@ -191,15 +200,7 @@ function _widenupper(beg::Ptr{UInt8}, off, len)
     out = bytoff(out, off)
     while out < fin
         ch = get_codeunit(cur)
-        if ch == 0xb5
-            set_codeunit!(out, 0x39c)
-        elseif ch == 0xff
-            set_codeunit!(out, 0x178)
-        elseif !V6_COMPAT && (ch == 0xdf)
-            set_codeunit!(out, 0x1e9e)
-        else
-            set_codeunit!(out, _can_upper(ch) ? ch - 0x20 : ch)
-        end
+        set_codeunit!(out, _can_upper(ch) ? ch - 0x20 : _wide_out_upper(ch))
         cur += 1
         out += 2
     end
@@ -319,7 +320,7 @@ function lowercase(str::MaybeSub{S}) where {C<:Union{UCS2_CSEs,UTF32_CSEs},S<:St
         pnt = beg = pointer(str)
         fin = beg + sizeof(str)
         while pnt < fin
-            _can_lower_ch(get_codeunit(pnt)) && return _lower(C, beg, pnt-beg, ncodeunits(str))
+            _isupper_ch(get_codeunit(pnt)) && return _lower(C, beg, pnt-beg, ncodeunits(str))
             pnt += sizeof(CU)
         end
     end
