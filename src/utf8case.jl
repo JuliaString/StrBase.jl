@@ -91,7 +91,17 @@ function _upper_utf8(beg, off, len)
             out += 1
         elseif ch < 0xc4
             ch = (ch << 6) | (get_codeunit(pnt += 1) & 0x3f)
-            c16 = ch == 0xb5 ? 0x39c : (ch == 0xff ? 0x178 : (ch - _can_upper_l(ch)<<5)%UInt16)
+            if _can_upper_l(ch)
+                c16 = (ch - 0x20)%UInt16
+            elseif ch == 0xb5
+                c16 = 0x39c
+            elseif ch == 0xff
+                c16 = 0x178
+            elseif !V6_COMPAT && ch == 0xdf
+                c16 = 0x1e9e
+            else
+                c16 = ch%UInt16
+            end
             out = output_utf8_2byte!(out, c16)
         elseif ch < 0xe0
             # 2 byte
@@ -167,6 +177,13 @@ function lowercase(str::Str{UTF8CSE})
     end
 end
 
+# Check if can be uppercased
+@inline function _check_uppercase(ch, pnt)
+    # ch < 0xc2 && return false (not needed, validated UTF-8 string)
+    cont = get_codeunit(pnt)
+    ch == 0xc3 ? ((cont > (V6_COMPAT ? 0x9f : 0x9e)) & (cont != 0xb7)) : (cont == 0xb5)
+end
+
 function uppercase(str::Str{UTF8CSE})
     @preserve str begin
         pnt = beg = pointer(str)
@@ -176,14 +193,14 @@ function uppercase(str::Str{UTF8CSE})
             prv = pnt
             (ch < 0x80
              ? _islower_a(ch)
-             : (ch < 0xc4
-                ? _can_upper_only_latin((ch << 6) | (get_codeunit(pnt += 1) & 0x3f))
-                : _islower_u(ch >= 0xf0
+             : (ch > 0xc3
+                ? _islower_u(ch >= 0xf0
                              ? get_utf8_4byte(pnt += 3, ch)
                              : (ch < 0xe0
                                 ? get_utf8_2byte(pnt += 1, ch)
-                                : get_utf8_3byte(pnt += 2, ch))%UInt32))) &&
-                                    return _upper_utf8(beg, prv-beg, ncodeunits(str))
+                                : get_utf8_3byte(pnt += 2, ch))%UInt32)
+                : _check_uppercase(ch, pnt += 1))) &&
+                    return _upper_utf8(beg, prv-beg, ncodeunits(str))
             pnt += 1
         end
         str

@@ -109,6 +109,12 @@ function uppercase_first(str::MaybeSub{S}) where {C<:LatinCSE,S<:Str{C}}
     end
 end
 
+@static if V6_COMPAT
+    _wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff)
+else
+    _wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff) | (ch == 0xdf)
+end
+
 # Special handling for characters that can't map into Latin1
 function uppercase_first(str::MaybeSub{S}) where {C<:_LatinCSE,S<:Str{C}}
     (len = ncodeunits(str)) == 0 && return str
@@ -120,9 +126,9 @@ function uppercase_first(str::MaybeSub{S}) where {C<:_LatinCSE,S<:Str{C}}
             set_codeunit!(out8, ch - 0x20)
             len > 1 && unsafe_copyto!(out8, pnt+1, len-1)
             Str(C, buf)
-        elseif (ch == 0xb5) | (ch == 0xff)
+        elseif _wide_lower_latin(ch)
             buf, out = _allocate(UInt16, len)
-            set_codeunit!(out, ifelse(ch == 0xb5, 0x39c, 0x178))
+            set_codeunit!(out, ifelse(ch == 0xb5, 0x39c, ifelse(ch == 0xff, 0x178, 0x1e9e)))
             # Perform the widen operation on the rest (should be done via SIMD)
             @inbounds for i = 2:len
                 set_codeunit!(out += 2, get_codeunit(pnt += 2)%UInt16)
@@ -152,7 +158,7 @@ function _upper(::Type{C}, beg::Ptr{UInt8}, off, len) where {C<:_LatinCSE}
     cur = beg + off
     # Need to scan the rest of the string to see if _widenupper needs to be called
     while cur < fin
-        ((ch = get_codeunit(cur)) == 0xb5) | (ch == 0xff) && return _widenupper(beg, off, len)
+        _wide_lower_latin(get_codeunit(cur)) && return _widenupper(beg, off, len)
         cur += 1
     end
     buf, out = _allocate(UInt8, len)
@@ -189,6 +195,8 @@ function _widenupper(beg::Ptr{UInt8}, off, len)
             set_codeunit!(out, 0x39c)
         elseif ch == 0xff
             set_codeunit!(out, 0x178)
+        elseif !V6_COMPAT && (ch == 0xdf)
+            set_codeunit!(out, 0x1e9e)
         else
             set_codeunit!(out, _can_upper(ch) ? ch - 0x20 : ch)
         end
@@ -218,7 +226,7 @@ function uppercase(str::MaybeSub{S}) where {C<:_LatinCSE,S<:Str{C}}
         fin = beg + len
         while pnt < fin
             ch = get_codeunit(pnt)
-            ((ch == 0xb5) | (ch == 0xff)) && return _widenupper(beg, pnt-beg, len)
+            _wide_lower_latin(ch) && return _widenupper(beg, pnt-beg, len)
             _can_upper(ch) && return _upper(C, beg, pnt-beg, len)
             pnt += 1
         end
@@ -336,6 +344,8 @@ function _upper(::Type{C}, beg, off, len) where {C<:Union{UCS2_CSEs,UTF32_CSEs}}
             set_codeunit!(out, 0x39c)
         elseif ch == 0xff
             set_codeunit!(out, 0x178)
+        elseif !V6_COMPAT && ch == 0xdf
+            set_codeunit!(out, 0x1e9e)
         end
         out += sizeof(CU)
     end

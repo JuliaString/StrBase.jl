@@ -8,17 +8,18 @@ Licensed under MIT License, see LICENSE.md
 # Recommended by deprecate
 @static if V6_COMPAT
     text_width(str::AbstractString) = strwidth(str)
+    text_width(str::Str) = mapreduce(text_width, +, 0, str)
 
     import Base: normalize_string
     Base.normalize_string(str::Str, opt::Symbol) = normalize(str, opt)
     Base.strwidth(str::Str) = text_width(str)
 else
+    text_width(str::Str) = mapreduce(text_width, +, str; init=0)
     Base.Unicode.normalize(str::Str, opt::Symbol) = normalize(str, opt)
 end
 
 ############################################################################
 
-text_width(str::Str) = mapreduce(text_width, +, 0, str)
 text_width(str::Str{Union{ASCIICSE,Latin_CSEs}}) = length(str)
 
 ############################################################################

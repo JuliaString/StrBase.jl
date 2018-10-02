@@ -69,6 +69,8 @@ function _upper(::Type{<:Str{UTF16CSE}}, beg, off, len)
                 set_codeunit!(out, 0x39c)
             elseif ch == 0xff
                 set_codeunit!(out, 0x178)
+            elseif !V6_COMPAT && ch == 0xdf
+                set_codeunit!(out, 0x1e9e)
             end
         elseif is_surrogate_trail(ch)
             # pick up previous code unit (lead surrogate)
