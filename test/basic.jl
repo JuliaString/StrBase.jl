@@ -34,6 +34,29 @@ end
     end
 end
 
+@testset "casefold string" begin
+    for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UTF8Str, UTF16Str)
+        C = eltype(ST)
+        tm = typemax(C)
+        for c = 0:Int(tm)
+            # Skip surrogates
+            0xd800 <= c < 0xe000 && continue
+            ch = C(c)
+            # Check to make sure this character would still fit uppercased
+            cu = uppercase(ch)
+            cu > tm && continue
+            for str in ("$ch test Beg", "test End $ch", "test $ch Mid", "$ch")
+                cvtstr = convert(ST, str)
+                # Don't do this for LatinStr until ChrBase bug fixed
+                ST !== LatinStr && @test uppercase(str) == uppercase(cvtstr)
+                @test lowercase(str) == lowercase(cvtstr)
+                #@test titlecase(str) == titlecase(cvtstr)
+                #@test uppercase_first(str) == uppercase_first(cvtstr)
+            end
+        end
+    end
+end
+
 @testset "{starts,ends}_with" begin
     for (ST, type_list) in compat_types, CT in type_list, str in test_strings_base[CT]
         cvtstr = convert(ST, str)
