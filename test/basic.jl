@@ -34,7 +34,6 @@ end
     end
 end
 
-#= This needs to wait until we can use ChrBase 0.1.7
 @testset "casefold string" begin
     for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UTF8Str, UTF16Str)
         C = eltype(ST)
@@ -56,7 +55,6 @@ end
         end
     end
 end
-=#
 
 @testset "{starts,ends}_with" begin
     for (ST, type_list) in compat_types, CT in type_list, str in test_strings_base[CT]

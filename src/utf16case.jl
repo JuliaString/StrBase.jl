@@ -97,7 +97,7 @@ function uppercase(str::UTF16Str)
             prv = pnt
             (ch > 0xd7ff # May be surrogate pair
              ? _islower_u(ch > 0xdfff ? ch%UInt32 : get_supplementary(ch, get_codeunit(pnt += 2)))
-             : _can_upper_ch(ch)) &&
+             : _wide_lower_ch(ch)) &&
                  return _upper(UTF16Str, beg, prv-beg, ncodeunits(str))
             pnt += 2
         end

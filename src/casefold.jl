@@ -359,7 +359,7 @@ function uppercase(str::MaybeSub{S}) where {C<:Union{UCS2_CSEs,UTF32_CSEs},S<:St
         pnt = beg = pointer(str)
         fin = beg + sizeof(str)
         while pnt < fin
-            _can_upper_ch(get_codeunit(pnt)) && return _upper(C, beg, pnt-beg, ncodeunits(str))
+            _wide_lower_ch(get_codeunit(pnt)) && return _upper(C, beg, pnt-beg, ncodeunits(str))
             pnt += sizeof(CU)
         end
         str
