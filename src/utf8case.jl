@@ -91,18 +91,22 @@ function _upper_utf8(beg, off, len)
             out += 1
         elseif ch < 0xc4
             ch = (ch << 6) | (get_codeunit(pnt += 1) & 0x3f)
-            if _can_upper_l(ch)
-                c16 = (ch - 0x20)%UInt16
-            elseif ch == 0xb5
-                c16 = 0x39c
-            elseif ch == 0xff
-                c16 = 0x178
-            elseif !V6_COMPAT && ch == 0xdf
-                c16 = 0x1e9e
+            if !V6_COMPAT && ch == 0xdf
+                # Increasing from 2 to 3 bytes, check to see if we need to resize
+                diff = (outend - out - 3) - (fin - pnt - 1)
+                if diff < 0
+                    outend -= diff
+                    resize!(buf, outend - out)
+                    out = pointer(buf)
+                    outend = out + sizeof(buf)
+                end
+                out = output_utf8_3byte!(out, 0x1e9e)
             else
-                c16 = ch%UInt16
+                out = output_utf8_2byte!(out, _can_upper_l(ch) ? (ch - 0x20)%UInt16
+                                              : ch == 0xb5 ? 0x39c
+                                              : ch == 0xff ? 0x178
+                                              : ch%UInt16)
             end
-            out = output_utf8_2byte!(out, c16)
         elseif ch < 0xe0
             # 2 byte
             c16 = get_utf8_2byte(pnt += 1, ch)
