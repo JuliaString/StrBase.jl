@@ -5,31 +5,16 @@ Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
 
-_wide_lower_l(c) = ifelse(c > (V6_COMPAT ? 0xdf : 0xde), c != 0xf7, c == 0xb5)
-
-@inline _wide_lower_ch(ch) =
-    ch <= 0x7f ? _islower_a(ch) : (ch > 0xff ? _islower_u(ch) : _wide_lower_l(ch))
-
-@inline _isupper_ch(ch) =
-    ch <= 0x7f ? _isupper_a(ch) : (ch > 0xff ? _isupper_u(ch) : _isupper_l(ch))
-
-_wide_lower_latin(ch) = (ch == 0xb5) | (ch == 0xff) | (!V6_COMPAT && (ch == 0xdf))
-
-_wide_out_upper(ch) =
-    ifelse(ch == 0xb5, 0x39c,
-           ifelse(ch == 0xff, 0x178, ifelse(!V6_COMPAT && ch == 0xdf, 0x1e9e, ch%UInt16)))
-
-
 function uppercase_first(str::MaybeSub{S}) where {C<:ASCIICSE,S<:Str{C}}
     (len = ncodeunits(str)) == 0 && return str
     @preserve str begin
         pnt = pointer(str)
         ch = get_codeunit(pnt)
         _islower_a(ch) || return str
-        out = _allocate(len)
+        buf, out = _allocate(UInt8, len)
         unsafe_copyto!(out, pnt, len)
         set_codeunit!(out, ch - 0x20)
-        Str(C, out)
+        Str(C, buf)
     end
 end
 
@@ -39,10 +24,10 @@ function lowercase_first(str::MaybeSub{S}) where {C<:ASCIICSE,S<:Str{C}}
         pnt = pointer(str)
         ch = get_codeunit(pnt)
         _isupper_a(ch) || return str
-        out = _allocate(len)
+        buf, out = _allocate(UInt8, len)
         unsafe_copyto!(out, pnt, len)
         set_codeunit!(out, ch + 0x20)
-        Str(C, out)
+        Str(C, buf)
     end
 end
 
@@ -119,7 +104,7 @@ function uppercase_first(str::MaybeSub{S}) where {C<:LatinCSE,S<:Str{C}}
         _can_upper(ch) || return str
         buf, out = _allocate(UInt8, len)
         set_codeunit!(out, ch - 0x20)
-        len > 1 && unsafe_copyto!(out, pnt+1, len-1)
+        len > 1 && unsafe_copyto!(out + 1, pnt+1, len-1)
         Str(C, buf)
     end
 end
@@ -130,19 +115,16 @@ function uppercase_first(str::MaybeSub{S}) where {C<:_LatinCSE,S<:Str{C}}
     @preserve str begin
         pnt = pointer(str)
         ch = get_codeunit(pnt)
-        if _can_upper(ch)
-            buf, out8 = _allocate(UInt8, len)
-            set_codeunit!(out8, ch - 0x20)
-            len > 1 && unsafe_copyto!(out8, pnt+1, len-1)
-            Str(C, buf)
-        elseif _wide_lower_latin(ch)
+        if _wide_lower_latin(ch)
             buf, out = _allocate(UInt16, len)
+            _widen!(out, pnt, pnt + len)
             set_codeunit!(out, _wide_out_upper(ch))
-            # Perform the widen operation on the rest (should be done via SIMD)
-            @inbounds for i = 2:len
-                set_codeunit!(out += 2, get_codeunit(pnt += 2)%UInt16)
-            end
             Str(_UCS2CSE, buf)
+        elseif _can_upper(ch)
+            buf8, out8 = _allocate(UInt8, len)
+            len > 1 && unsafe_copyto!(out8, pnt, len)
+            set_codeunit!(out8, ch - 0x20)
+            Str(_LatinCSE, buf8)
         else
             str
         end
@@ -154,10 +136,10 @@ function lowercase_first(str::MaybeSub{S}) where {C<:Latin_CSEs,S<:Str{C}}
     @preserve str begin
         pnt = pointer(str)
         ch = get_codeunit(pnt)
-        _isupper(ch) || return str
+        _isupper_al(ch) || return str
         buf, out = _allocate(UInt8, len)
         set_codeunit!(out, ch + 0x20)
-        len > 1 && unsafe_copyto!(out, pnt+1, len-1)
+        len > 1 && unsafe_copyto!(out+1, pnt+1, len-1)
         Str(C, buf)
     end
 end
@@ -261,6 +243,8 @@ function lowercase(str::MaybeSub{S}) where {C<:Latin_CSEs,S<:Str{C}}
     str
 end
 
+_is_latin_ucs2(len, pnt) = _check_mask_ul(pnt, len, _latin_mask(UInt16))
+
 # result must have at least one character > 0xff, so if the only character(s)
 # > 0xff became <= 0xff, then the result may need to be narrowed and returned as _LatinStr
 
@@ -268,7 +252,8 @@ function _lower(::Type{C}, beg, off, len) where {C<:_UCS2CSE}
     CU = codeunit(C)
     buf, out = _allocate(CU, len)
     unsafe_copyto!(out, beg, len)
-    fin = out + (len*sizeof(CU))
+    lenw = len*sizeof(CU)
+    fin = out + lenw
     out += off
     flg = false
     while out < fin
@@ -277,18 +262,19 @@ function _lower(::Type{C}, beg, off, len) where {C<:_UCS2CSE}
             _isupper_a(ch) && set_codeunit!(out, ch += 0x20)
         elseif ch <= 0xff
             _isupper_l(ch) && set_codeunit!(out, ch += 0x20)
-        elseif _isupper_u(ch)
-            ch = _lowercase_u(ch)
-            flg = ch <= 0xff
-            set_codeunit!(out, ch)
+        elseif ch <= 0xffff
+            if _can_lower_bmp(ch)
+                ch = _lower_bmp(ch)
+                flg = ch <= 0xff
+                set_codeunit!(out, ch)
+            end
         end
         out += sizeof(CU)
     end
-    if flg && is_latin(buf)
-        out = pointer(buf)
-        buf = _allocate(len)
-        _narrow!(pointer(buf), out, out + len)
-        Str(_LatinCSE, buf)
+    if flg && (src = reinterpret(Ptr{UInt16}, pointer(buf)); _is_latin_ucs2(lenw, src))
+        buf8 = _allocate(len)
+        _narrow!(pointer(buf8), src, src + lenw)
+        Str(_LatinCSE, buf8)
     else
         Str(C, buf)
     end
@@ -302,16 +288,66 @@ function _lower(::Type{C}, beg, off, len) where {C<:Union{UCS2CSE,UTF32_CSEs}}
     out += off
     while out < fin
         ch = get_codeunit(out)
-        if ch <= 0x7f
-            _isupper_a(ch) && set_codeunit!(out, ch += 0x20)
-        elseif ch <= 0xff
-            _isupper_l(ch) && set_codeunit!(out, ch += 0x20)
-        elseif _isupper_u(ch)
-            set_codeunit!(out, _lowercase_u(ch))
+        if ch <= 0xff
+            _isupper_al(ch) && set_codeunit!(out, ch += 0x20)
+        elseif ch <= 0xffff
+            _can_lower_bmp(ch) && set_codeunit!(out, _lower_bmp(ch))
+        elseif ch <= 0x1ffff
+            _can_lower_slp(ch) && set_codeunit!(out, _lower_slp(ch))
         end
         out += sizeof(CU)
     end
     Str(C, buf)
+end
+
+function lowercase_first(str::MaybeSub{S}) where {C<:_UCS2CSE,S<:Str{C}}
+    (len = ncodeunits(str)) == 0 && return str
+    @preserve str begin
+        pnt = pointer(str)
+        ch = get_codeunit(pnt)
+        (ch <= 0xff ? _isupper_al(ch) : ch <= 0xffff ? _can_lower_bmp(ch) :
+         ch <= 0x1ffff && _can_lower_slp(ch)) ||
+         return str
+        cl = _lower_ch(ch)
+        if ch > 0xff && cl <= 0xff && _check_mask_ul(pnt+1, len-1, _latin_mask(UInt16))
+            buf8, out8 = _allocate(UInt8, len)
+            len > 1 && _narrow!(out8, pnt, pnt + len)
+            set_codeunit!(out8, cl)
+            Str(_LatinCSE, buf8)
+        else
+            buf, out = _allocate(codeunit(C), len)
+            len > 1 && unsafe_copyto!(out, pnt, len)
+            set_codeunit!(out, cl)
+            Str(C, buf)
+        end
+    end
+end
+
+function uppercase_first(str::MaybeSub{S}) where {C<:Union{UCS2_CSEs,UTF32_CSEs},S<:Str{C}}
+    (len = ncodeunits(str)) == 0 && return str
+    @preserve str begin
+        pnt = pointer(str)
+        ch = get_codeunit(pnt)
+        cp = _title_ch(ch)
+        ch == cp && return str
+        buf, out = _allocate(codeunit(C), len)
+        len > 1 && unsafe_copyto!(out, pnt, len)
+        set_codeunit!(out, cp)
+        Str(C, buf)
+    end
+end
+
+function lowercase_first(str::MaybeSub{S}) where {C<:Union{UCS2CSE,UTF32_CSEs},S<:Str{C}}
+    (len = ncodeunits(str)) == 0 && return str
+    @preserve str begin
+        pnt = pointer(str)
+        ch = get_codeunit(pnt)
+        _can_lower_ch(ch) || return str
+        buf, out = _allocate(codeunit(C), len)
+        len > 1 && unsafe_copyto!(out, pnt, len)
+        set_codeunit!(out, _lower_ch(ch))
+        Str(C, buf)
+    end
 end
 
 function lowercase(str::MaybeSub{S}) where {C<:Union{UCS2_CSEs,UTF32_CSEs},S<:Str{C}}
@@ -320,7 +356,7 @@ function lowercase(str::MaybeSub{S}) where {C<:Union{UCS2_CSEs,UTF32_CSEs},S<:St
         pnt = beg = pointer(str)
         fin = beg + sizeof(str)
         while pnt < fin
-            _isupper_ch(get_codeunit(pnt)) && return _lower(C, beg, pnt-beg, ncodeunits(str))
+            _can_lower_ch(get_codeunit(pnt)) && return _lower(C, beg, pnt-beg, ncodeunits(str))
             pnt += sizeof(CU)
         end
     end
@@ -337,16 +373,12 @@ function _upper(::Type{C}, beg, off, len) where {C<:Union{UCS2_CSEs,UTF32_CSEs}}
         ch = get_codeunit(out)
         if ch <= 0x7f
             _islower_a(ch) && set_codeunit!(out, ch -= 0x20)
-        elseif ch > 0xff
-            _islower_u(ch) && set_codeunit!(out, _uppercase_u(ch))
-        elseif _can_upper(ch)
-            set_codeunit!(out, ch -= 0x20)
-        elseif ch == 0xb5
-            set_codeunit!(out, 0x39c)
-        elseif ch == 0xff
-            set_codeunit!(out, 0x178)
-        elseif !V6_COMPAT && ch == 0xdf
-            set_codeunit!(out, 0x1e9e)
+        elseif ch <= 0xff
+            set_codeunit!(out, _uppercase_l(ch))
+        elseif ch <= 0xffff
+            _can_upper_bmp(ch) && set_codeunit!(out, _upper_bmp(ch))
+        elseif ch <= 0x1ffff
+            _can_upper_slp(ch) && set_codeunit!(out, _upper_slp(ch))
         end
         out += sizeof(CU)
     end
@@ -359,7 +391,7 @@ function uppercase(str::MaybeSub{S}) where {C<:Union{UCS2_CSEs,UTF32_CSEs},S<:St
         pnt = beg = pointer(str)
         fin = beg + sizeof(str)
         while pnt < fin
-            _wide_lower_ch(get_codeunit(pnt)) && return _upper(C, beg, pnt-beg, ncodeunits(str))
+            _can_upper_ch(get_codeunit(pnt)) && return _upper(C, beg, pnt-beg, ncodeunits(str))
             pnt += sizeof(CU)
         end
         str

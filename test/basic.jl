@@ -34,24 +34,52 @@ end
     end
 end
 
-@testset "casefold string" begin
-    for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UTF8Str, UTF16Str)
+@static V6_COMPAT || (hex(a) = string(a, base=16))
+
+const sb = StrBase
+const ct = sb.ct
+const titlelst = (0x1c4, 0x1c6, 0x1c7, 0x1c9, 0x1ca, 0x1cc, 0x1f1, 0x1f3) # 'ǅ', 'ǈ', 'ǲ', 'ǋ'
+
+for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UniStr, UTF8Str, UTF16Str)
+    @testset "casefold string: $ST" begin
         C = eltype(ST)
         tm = typemax(C)
-        for c = 0:Int(tm)
+        for c = UInt32(0):UInt32(tm)
             # Skip surrogates
             0xd800 <= c < 0xe000 && continue
+            # Handle 3 cases where LatinStr doesn't uppercase
+            ST === LatinStr && c in (0xb5, 0xdf, 0xff) && continue
             ch = C(c)
             # Check to make sure this character would still fit uppercased
             cu = uppercase(ch)
             cu > tm && continue
-            for str in ("$ch test Beg", "test End $ch", "test $ch Mid", "$ch")
+            cl = lowercase(ch)
+            flg = V6_COMPAT && c in titlelst
+            for (i, str) in enumerate(("$ch", "$ch test Beg", "test End $ch", "test $ch Mid"))
+                t = c >>> 9
                 cvtstr = convert(ST, str)
-                # Don't do this for LatinStr until ChrBase bug fixed
-                ST !== LatinStr && @test uppercase(str) == uppercase(cvtstr)
+                uppercase(str) == uppercase(cvtstr) ||
+                    println("uppercase not matching: 0x$(hex(c)), 0x$(hex(UInt32(cu))), ",
+                            "$(sb._can_upper_ch(c)), $(hex(sb._upper_bmp(c))), ",
+                            "$(ct.u_tab[(t>>1)+1])")
+                @test uppercase(str) == uppercase(cvtstr)
+                lowercase(str) == lowercase(cvtstr) ||
+                    println("lowercase not matching: 0x$(hex(c)), 0x$(hex(UInt32(cl))), ",
+                            "$(sb._can_lower_ch(c)) $(hex(sb._lower_bmp(c))), ",
+                            "$(ct.l_tab[(t>>1)+1])")
                 @test lowercase(str) == lowercase(cvtstr)
                 #@test titlecase(str) == titlecase(cvtstr)
-                #@test uppercase_first(str) == uppercase_first(cvtstr)
+                i > 2 && continue
+                @test lowercase_first(str) == lowercase_first(cvtstr)
+                uppercase_first(str) == uppercase_first(cvtstr) ||
+                    println("uppercase_first not matching: 0x$(hex(c)), 0x$(hex(UInt32(cu))), ",
+                            "$(sb._can_upper_ch(c)), $(hex(sb._title_bmp(c))), ",
+                            "$(ct.u_tab[(t>>1)+1])")
+                if flg
+                    @test_broken uppercase_first(str) == uppercase_first(cvtstr)
+                else
+                    @test uppercase_first(str) == uppercase_first(cvtstr)
+                end
             end
         end
     end
@@ -543,11 +571,11 @@ end
     for (rng, flg) in ((0x00:0x9f, false), (0xa0:0xbf, true), (0xc0:0xff, false))
         for cont in rng
             @test is_valid(ST, UInt8[0xe0, cont]) == false
-            is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg ||
-                println("isvalid($ST, [0x80, $cont, 0x80])")
             if ST === String && (0x80 <= cont <= 0x9f)
                 @test_broken is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg
             else
+                is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg ||
+                    println("isvalid($ST, [0x80, $cont, 0x80])")
                 @test is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg
             end
         end

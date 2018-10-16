@@ -15,6 +15,7 @@ codeunit(::Type{<:MaybeSub{S}}) where {S<:Str} = codeunit(S)
 
 eltype(::Type{<:Str{BinaryCSE}}) = UInt8
 
+eltype(::Type{UniStr})                = UTF32Chr
 eltype(::Type{<:Str{Text1CSE}})       = Text1Chr
 eltype(::Type{<:Str{Text2CSE}})       = Text2Chr
 eltype(::Type{<:Str{Text4CSE}})       = Text4Chr

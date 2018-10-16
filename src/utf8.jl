@@ -199,7 +199,7 @@ is_latin(str::SubString{<:Str{UTF8CSE}}) =
 
 is_latin(vec::Vector{T}) where {T<:Union{UInt16,UInt32}} =
     (cnt = sizeof(vec)) == 0 ? true :
-    @preserve str _check_mask_ul(pointer(vec), cnt, _latin_mask(T))
+    @preserve vec _check_mask_ul(pointer(vec), cnt, _latin_mask(T))
 
 is_latin(str::SubString{<:Str{C}}) where {C<:Union{Word_CSEs,Quad_CSEs}} =
     (cnt = sizeof(str)) == 0 ? true :
