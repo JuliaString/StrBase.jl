@@ -34,15 +34,12 @@ end
     end
 end
 
-@static V6_COMPAT || (hex(a) = string(a, base=16))
-
-const sb = StrBase
-const ct = sb.ct
 const titlelst = (0x1c4, 0x1c6, 0x1c7, 0x1c9, 0x1ca, 0x1cc, 0x1f1, 0x1f3) # 'ǅ', 'ǈ', 'ǲ', 'ǋ'
 
 for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UniStr, UTF8Str, UTF16Str)
     @testset "casefold string: $ST" begin
         C = eltype(ST)
+        C == Char && (C = UTF32Chr)
         tm = typemax(C)
         for c = UInt32(0):UInt32(tm)
             # Skip surrogates
@@ -58,23 +55,11 @@ for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UniStr, UTF8Str, UTF16Str)
             for (i, str) in enumerate(("$ch", "$ch test Beg", "test End $ch", "test $ch Mid"))
                 t = c >>> 9
                 cvtstr = convert(ST, str)
-                uppercase(str) == uppercase(cvtstr) ||
-                    println("uppercase not matching: 0x$(hex(c)), 0x$(hex(UInt32(cu))), ",
-                            "$(sb._can_upper_ch(c)), $(hex(sb._upper_bmp(c))), ",
-                            "$(ct.u_tab[(t>>1)+1])")
                 @test uppercase(str) == uppercase(cvtstr)
-                lowercase(str) == lowercase(cvtstr) ||
-                    println("lowercase not matching: 0x$(hex(c)), 0x$(hex(UInt32(cl))), ",
-                            "$(sb._can_lower_ch(c)) $(hex(sb._lower_bmp(c))), ",
-                            "$(ct.l_tab[(t>>1)+1])")
                 @test lowercase(str) == lowercase(cvtstr)
                 #@test titlecase(str) == titlecase(cvtstr)
                 i > 2 && continue
                 @test lowercase_first(str) == lowercase_first(cvtstr)
-                uppercase_first(str) == uppercase_first(cvtstr) ||
-                    println("uppercase_first not matching: 0x$(hex(c)), 0x$(hex(UInt32(cu))), ",
-                            "$(sb._can_upper_ch(c)), $(hex(sb._title_bmp(c))), ",
-                            "$(ct.u_tab[(t>>1)+1])")
                 if flg
                     @test_broken uppercase_first(str) == uppercase_first(cvtstr)
                 else

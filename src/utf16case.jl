@@ -15,7 +15,7 @@ function _lower(::Type{<:Str{UTF16CSE}}, beg, off, len)
     while out < fin
         ch = get_codeunit(out)
         if ch <= 0xff
-            _isupper_al(ch) && set_codeunit!(out, ch += 0x20)
+            _is_upper_al(ch) && set_codeunit!(out, ch += 0x20)
         elseif is_surrogate_trail(ch)
             # pick up previous code unit (lead surrogate)
             cp = get_supplementary(get_codeunit(out - 2), ch)
@@ -39,7 +39,7 @@ function lowercase(str::MaybeSub{S}) where {C<:UTF16CSE,S<:Str{C}}
         while pnt < fin
             ch = get_codeunit(pnt)
             prv = pnt
-            (ch <= 0xff ? _isupper_al(ch) :
+            (ch <= 0xff ? _is_upper_al(ch) :
              (is_surrogate_lead(ch)
               ? (cp = get_supplementary(ch, get_codeunit(pnt += 2));
                  cp <= 0x1ffff && _can_lower_slp(cp))
@@ -57,7 +57,7 @@ function lowercase_first(str::MaybeSub{S}) where {C<:UTF16CSE,S<:Str{C}}
         pnt = pointer(str)
         ch = get_codeunit(pnt)
         if ch <= 0x7f
-            _isupper_al(ch) || return str
+            _is_upper_al(ch) || return str
             ch += 0x20
             buf, out = _allocate(codeunit(C), len)
             len > 1 && unsafe_copyto!(out, pnt, len)
@@ -70,7 +70,7 @@ function lowercase_first(str::MaybeSub{S}) where {C<:UTF16CSE,S<:Str{C}}
             set_codeunit!(out + 2, c2)
         else
             _can_lower_ch(ch) || return str
-            ch = _lower_ch(ch)
+            ch = _lowercase(ch)
             buf, out = _allocate(codeunit(C), len)
             len > 1 && unsafe_copyto!(out, pnt, len)
         end
@@ -87,7 +87,7 @@ function _upper(::Type{<:Str{UTF16CSE}}, beg, off, len)
     while out < fin
         ch = get_codeunit(out)
         if ch <= 0x7f
-            _islower_a(ch) && set_codeunit!(out, ch -= 0x20)
+            _is_lower_a(ch) && set_codeunit!(out, ch -= 0x20)
         elseif ch <= 0xff
             set_codeunit!(out, _uppercase_l(ch))
         elseif is_surrogate_trail(ch)
@@ -113,7 +113,7 @@ function uppercase(str::MaybeSub{S}) where {C<:UTF16CSE,S<:Str{C}}
         while pnt < fin
             ch = get_codeunit(pnt)
             prv = pnt
-            if (ch <= 0x7f ? _islower_a(ch) : ch <= 0xff ? _can_upper_lat(ch) :
+            if (ch <= 0x7f ? _is_lower_a(ch) : ch <= 0xff ? _can_upper_lat(ch) :
                 (is_surrogate_lead(ch)
                  ? (cp = get_supplementary(ch, get_codeunit(pnt += 2));
                     cp <= 0x1ffff && _can_upper_slp(cp))
@@ -132,7 +132,7 @@ function uppercase_first(str::MaybeSub{S}) where {C<:UTF16CSE,S<:Str{C}}
         pnt = pointer(str)
         ch = get_codeunit(pnt)
         if ch <= 0x7f
-            _islower_a(ch) || return str
+            _is_lower_a(ch) || return str
             ch -= 0x20
             buf, out = _allocate(codeunit(C), len)
             len > 1 && unsafe_copyto!(out, pnt, len)
@@ -145,7 +145,7 @@ function uppercase_first(str::MaybeSub{S}) where {C<:UTF16CSE,S<:Str{C}}
             set_codeunit!(out + 2, c2)
         else
             cp = ch
-            (ch = _title_ch(ch)) == cp && return str
+            (ch = _titlecase(ch)) == cp && return str
             buf, out = _allocate(codeunit(C), len)
             len > 1 && unsafe_copyto!(out, pnt, len)
         end
