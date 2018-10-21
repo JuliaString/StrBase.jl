@@ -216,7 +216,20 @@ end
 
 function convert(::Type{<:Str{UTF32CSE}}, dat::Vector{<:Union{UInt32,Int32,Text4Chr}})
     is_valid(UTF32Str, dat) || strerror(StrErrors.INVALID)
-    @preserve dat Str(UTF32CSE, _copysub(pointer(dat), length(dat)))
+    Str(UTF32CSE, _copysub(dat))
+end
+
+function is_valid(::Type{<:Str{UTF32CSE}}, dat::Vector{<:Union{UInt32,Int32,Text4Chr}})
+    @preserve dat begin
+        pnt = pointer(dat)
+        fin = pnt + sizeof(dat)
+        while pnt < fin
+            ch = get_codeunit(pnt)
+            (!is_surrogate_codeunit(ch) && ch <= 0x10ffff) || return false
+            pnt += 4
+        end
+    end
+    true
 end
 
 # Not sure this is valid anymore, want to avoid type piracy
