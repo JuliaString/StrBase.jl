@@ -701,8 +701,9 @@ const Chrs = @static V6_COMPAT ? Union{Char,AbstractChar} : Chr
 function repeat(ch::CP, cnt::Integer) where {CP <: Chrs}
     C = codepoint_cse(CP)
     cnt > 1 && return Str(C, _repeat(EncodingStyle(C), C, codepoint(ch), cnt))
-    cnt < 0 && repeaterr(cnt)
-    cnt == 0 ? empty_str(C) : _convert(C, codepoint(ch))
+    cnt == 1 && return _convert(C, codepoint(ch))
+    cnt == 0 && return empty_str(C)
+    repeaterr(cnt)
 end
 
 (^)(ch::CP, cnt::Integer) where {CP <: Chrs} = repeat(ch, cnt)
@@ -849,8 +850,8 @@ end
 _repeat(::MultiCU, ::Type{UTF16CSE}, ch, cnt) =
     ch <= 0xffff ? _repeat_chr(UInt16, ch, cnt) : _repeat_chr(UInt32, get_utf16_32(ch), cnt)
 
-function repeat(str::T, cnt::Integer) where {C<:CSE,T<:Str{C}}
-    cnt < 2 && return cnt == 1 ? str : (cnt == 0 ? empty_str(C) : repeaterr(cnt))
+function _repeat_str(str::T, cnt) where {C<:CSE,T<:Str{C}}
+    cnt <= 0 && (cnt < 0 ? repeaterr(cnt) : return empty_str(C))
     CU = codeunit(T)
     @preserve str begin
         len = ncodeunits(str)
@@ -871,6 +872,9 @@ function repeat(str::T, cnt::Integer) where {C<:CSE,T<:Str{C}}
     end
     Str(C, buf)
 end
+
+@inline repeat(str::Str, cnt::Integer) = cnt == 1 ? str : _repeat_str(str, cnt)
+
 (^)(str::T, cnt::Integer) where {T<:Str} = repeat(str, cnt)
 
 # Definitions for C compatible strings, that don't allow embedded

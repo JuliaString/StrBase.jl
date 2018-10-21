@@ -147,9 +147,10 @@ function convert(::Type{<:Str{LatinCSE}}, str::MS_ByteStr)
     end
 end
 
-_convert(::Type{_LatinCSE}, ch::UInt8) = _convert(ch <= 0x7f ? ASCIICSE : _LatinCSE, ch)
 convert(::Type{<:Str{_LatinCSE}}, ch::Unsigned) =
-    ch < 0xff ? _convert(_LatinCSE, ch%UInt8) : strerror(StrErrors.LATIN1, ch)
+    (ch <= 0xff
+     ? _convert(ch <= 0x7f ? ASCIICSE : _LatinCSE, ch%UInt8)
+     : strerror(StrErrors.LATIN1, ch))
 
 function convert(::Type{<:Str{_LatinCSE}}, str::MS_ByteStr)
     # handle zero length string quickly
