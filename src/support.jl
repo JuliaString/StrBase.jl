@@ -698,16 +698,6 @@ last(str::Str, n::Integer)  = str[max(1, prevind(str, ncodeunits(str)+1, n)):end
 
 const Chrs = @static V6_COMPAT ? Union{Char,AbstractChar} : Chr
 
-function repeat(ch::CP, cnt::Integer) where {CP <: Chrs}
-    C = codepoint_cse(CP)
-    cnt > 1 && return Str(C, _repeat(EncodingStyle(C), C, codepoint(ch), cnt))
-    cnt == 1 && return _convert(C, codepoint(ch))
-    cnt == 0 && return empty_str(C)
-    repeaterr(cnt)
-end
-
-(^)(ch::CP, cnt::Integer) where {CP <: Chrs} = repeat(ch, cnt)
-
 # low level mem support functions
 
 const HAS_WMEM = !(@static V6_COMPAT ? is_windows() : Sys.iswindows())
@@ -812,6 +802,39 @@ _memcpy(a::Ptr{T}, b::Ptr{T}, len) where {T<:OthChr} =
     end
 end
 
+@inline _aligned_set(pnt::Ptr{UInt8}, ch::UInt8, cnt) = _memset(pnt, ch, cnt)
+
+@inline function _aligned_set(pnt::Ptr{UInt16}, ch::UInt16, cnt)
+    val = ch%UInt64
+    val |= (val<<16) | (val<<32) | (val<<48)
+    p64 = reinterpret(Ptr{UInt64}, pnt)
+    @inbounds for i = 1:((cnt + 3)>>2)
+        unsafe_store!(p64, val, i)
+    end
+    #=
+    fin = p64 + (((cnt + 3)>>2)<<3)
+    while p64 < fin
+        unsafe_store!(p64, val)
+        p64 += 8
+    end
+    =#
+end
+
+@inline function _aligned_set(pnt::Ptr{UInt32}, ch::UInt32, cnt)
+    val = ((ch%UInt64)<<32) | ch
+    p64 = reinterpret(Ptr{UInt64}, pnt)
+    @inbounds for i = 1:((cnt + 1)>>1)
+        unsafe_store!(p64, val, i)
+    end
+    #=
+    fin = p64 + (((cnt + 1)>>1)<<3)
+    while p64 < fin
+        unsafe_store!(p64, val)
+        p64 += 8
+    end
+    =#
+end
+
 @inline function _repeat_chr(::Type{T}, ch, cnt) where {T<:CodeUnitTypes}
     #println("_repeat_chr($T, $ch, $cnt)")
     buf, pnt = _allocate(T, cnt)
@@ -876,6 +899,67 @@ end
 @inline repeat(str::Str, cnt::Integer) = cnt == 1 ? str : _repeat_str(str, cnt)
 
 (^)(str::T, cnt::Integer) where {T<:Str} = repeat(str, cnt)
+
+function repeat(ch::CP, cnt::Integer) where {CP <: Chrs}
+    C = codepoint_cse(CP)
+    cnt > 1 && return Str(C, _repeat(EncodingStyle(C), C, codepoint(ch), cnt))
+    cnt == 1 && return _convert(C, codepoint(ch))
+    cnt == 0 && return empty_str(C)
+    repeaterr(cnt)
+end
+
+(^)(ch::CP, cnt::Integer) where {CP <: Chrs} = repeat(ch, cnt)
+
+#=
+function _repeat(::Type{CS}, ch::C, cnt::Integer) where {CS<:CSE,C<:Union{ASCIIChr,LatinChr}}
+    cnt == 0 && return empty_str(CS)
+    cnt < 0 && repeaterr(cnt)
+    buf, pnt = _allocate(UInt8, cnt)
+    cnt == 1 ? set_codeunit!(pnt, ch%UInt8) : _memset(pnt, ch%UInt8, cnt)
+    Str(CS, buf)
+end
+
+function _repeat(::Type{CS}, ch::C, cnt::Integer) where {CS<:CSE,C<:Union{UCS2Chr,UTF32Chr}}
+    cnt == 0 && return empty_str(CS)
+    cnt < 0 && repeaterr(cnt)
+    CU = codeunit(CS)
+    buf, pnt = _allocate(CU, cnt)
+    cnt == 1 ? set_codeunit!(pnt, ch%CU) : _aligned_set(pnt, ch%CU, cnt)
+    Str(CS, buf)
+end
+
+repeat(ch::ASCIIChr, cnt::Integer) = _repeat(ASCIICSE, ch, cnt)
+repeat(ch::LatinChr, cnt::Integer) = _repeat(LatinCSE, ch, cnt)
+repeat(ch::UCS2Chr,  cnt::Integer) = _repeat(UCS2CSE,  ch, cnt)
+repeat(ch::UTF32Chr, cnt::Integer) = _repeat(UTF32CSE, ch, cnt)
+=#
+
+function repeat(ch::C, cnt::Integer) where {C<:Union{ASCIIChr,LatinChr,_LatinChr}}
+    cnt == 0 && return empty_str(ASCIICSE)
+    cnt < 0 && repeaterr(cnt)
+    cu = ch%UInt8
+    buf, pnt = _allocate(UInt8, cnt)
+    _memset(pnt, cu, cnt)
+    Str((C == ASCIIChr || cu <= 0x7f) ? ASCIICSE : (C == _LatinChr ? _LatinCSE : LatinCSE), buf)
+end
+
+function repeat(ch::C, cnt::Integer) where {C<:Union{UCS2Chr,UTF32Chr}}
+    cnt == 0 && return empty_str(ASCIICSE)
+    cnt < 0 && repeaterr(cnt)
+    if ch%UInt32 <= 0xff
+        buf, pnt = _allocate(UInt8, cnt)
+        cnt == 1 && set_codepoint!(pnt, ch%UInt8) : _memset(pnt, ch%UInt8, cnt)
+        Str(ifelse(ch%UInt8 <= 0x7f, ASCIICSE, LatinCSE), buf)
+    elseif C == UCS2Chr || ch%UInt32 <= 0xffff
+        buf, pnt = _allocate(UInt16, cnt)
+        cnt == 1 && set_codepoint!(pnt, ch%UInt16) : _aligned_set(pnt, ch%UInt16, cnt)
+        Str(UCS2CSE, buf)
+    else
+        buf, pnt = _allocate(UInt32, cnt)
+        cnt == 1 && set_codepoint!(pnt, ch%UInt32) : _aligned_set(pnt, ch%UInt32, cnt)
+        Str(UTF32CSE, buf)
+    end
+end
 
 # Definitions for C compatible strings, that don't allow embedded
 # '\0', and which are terminated by a '\0'

@@ -154,6 +154,7 @@ function _nextcpfun(::MultiCU, ::Type{UTF16CSE}, pnt)
      : (ch%UInt32, pnt + 2))
 end
 
+#=
 @propagate_inbounds function _iterate(::MultiCU, ::Type{T}, str::MS_UTF16, pos::Int) where {T}
     @preserve str begin
         pnt = bytoff(pointer(str), pos)
@@ -162,6 +163,25 @@ end
          ? (T(get_supplementary(ch, get_codeunit(pnt))), pos + 2)
          : (T(ch), pos + 1))
     end
+end
+
+@propagate_inbounds function iterate(str::MS_UTF16)
+    @_inline_meta()
+    ncodeunits(str) == 0 && return nothing
+    ch = get_codeunit(str)
+    (is_surrogate_lead(ch)
+     ? (UTF32Chr(get_supplementary(ch, get_codeunit(str, 2))), 3)
+     : (UTF32Chr(ch), 2))
+end
+=#
+
+@propagate_inbounds function iterate(str::MS_UTF16, pos::Integer=1)
+    #@_inline_meta()
+    pos > ncodeunits(str) && return nothing
+    @boundscheck pos <= 0 && boundserr(str, pos)
+    ch = get_codeunit(str, pos)
+    is_surrogate_lead(ch) || return UTF32Chr(ch), pos+1
+    (UTF32Chr(get_supplementary(ch, get_codeunit(str, pos+1))), pos+2)
 end
 
 @propagate_inbounds function _next(::MultiCU, ::Type{T}, str::MS_UTF16, pos::Int) where {T}

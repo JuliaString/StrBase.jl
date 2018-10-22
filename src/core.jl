@@ -135,7 +135,7 @@ end
         @_inline_meta()
         T(get_codeunit(str, pos)), pos + 1
     end
-    @propagate_inbounds function iterate(str::MaybeSub{T}, pos::Int=firstindex(str)
+    @propagate_inbounds function iterate(str::MaybeSub{T}, pos::Integer=firstindex(str)
                                          )::Union{Nothing,Tuple{eltype(T),Int}} where {T<:Str}
         @_inline_meta()
         pos > ncodeunits(str) && return nothing

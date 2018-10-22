@@ -330,6 +330,7 @@ function _nextcpfun(::MultiCU, ::Type{UTF8CSE}, pnt)
     end
 end
 
+#=
 @propagate_inbounds function _iterate(::MultiCU, ::Type{T}, str::MS_UTF8,
                                       pos::Int) where {T<:Chr}
     @preserve str begin
@@ -345,6 +346,27 @@ end
             T(get_utf8_3byte(pnt + 2, ch)), pos + 3
         else
             T(get_utf8_4byte(pnt + 3, ch)), pos + 4
+        end
+    end
+end
+=#
+
+@propagate_inbounds function iterate(str::MS_UTF8, pos::Integer=1)
+    pos > ncodeunits(str) && return nothing
+    @boundscheck pos <= 0 && boundserr(str, pos)
+    @preserve str begin
+        pnt = pointer(str) + pos - 1
+        ch = get_codeunit(pnt)
+        if ch < 0x80
+            UTF32Chr(ch), pos + 1
+        elseif ch < 0xc0
+            index_error(str, pos)
+        elseif ch < 0xe0
+            UTF32Chr(get_utf8_2byte(pnt + 1, ch)), pos + 2
+        elseif ch < 0xf0
+            UTF32Chr(get_utf8_3byte(pnt + 2, ch)), pos + 3
+        else
+            UTF32Chr(get_utf8_4byte(pnt + 3, ch)), pos + 4
         end
     end
 end
