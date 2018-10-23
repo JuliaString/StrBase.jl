@@ -948,15 +948,15 @@ function repeat(ch::C, cnt::Integer) where {C<:Union{UCS2Chr,UTF32Chr}}
     cnt < 0 && repeaterr(cnt)
     if ch%UInt32 <= 0xff
         buf, pnt = _allocate(UInt8, cnt)
-        cnt == 1 && set_codepoint!(pnt, ch%UInt8) : _memset(pnt, ch%UInt8, cnt)
+        cnt == 1 && set_codeunit!(pnt, ch%UInt8) : _memset(pnt, ch%UInt8, cnt)
         Str(ifelse(ch%UInt8 <= 0x7f, ASCIICSE, LatinCSE), buf)
     elseif C == UCS2Chr || ch%UInt32 <= 0xffff
         buf, pnt = _allocate(UInt16, cnt)
-        cnt == 1 && set_codepoint!(pnt, ch%UInt16) : _aligned_set(pnt, ch%UInt16, cnt)
+        cnt == 1 && set_codeunit!(pnt, ch%UInt16) : _aligned_set(pnt, ch%UInt16, cnt)
         Str(UCS2CSE, buf)
     else
         buf, pnt = _allocate(UInt32, cnt)
-        cnt == 1 && set_codepoint!(pnt, ch%UInt32) : _aligned_set(pnt, ch%UInt32, cnt)
+        cnt == 1 && set_codeunit!(pnt, ch%UInt32) : _aligned_set(pnt, ch%UInt32, cnt)
         Str(UTF32CSE, buf)
     end
 end
