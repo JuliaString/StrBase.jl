@@ -186,7 +186,7 @@ end
 
 @propagate_inbounds function _next(::MultiCU, ::Type{T}, str::MS_UTF16, pos::Int) where {T}
     @boundscheck pos <= ncodeunits(str) || boundserr(str, pos)
-    _iterate(MultiCU(), T, str, pos)
+    iterate(str, pos)
 end
 
 @inline _thisind(::MultiCU, str::MS_UTF16, len, pnt, pos) =

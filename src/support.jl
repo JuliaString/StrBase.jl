@@ -910,56 +910,48 @@ end
 
 (^)(ch::CP, cnt::Integer) where {CP <: Chrs} = repeat(ch, cnt)
 
-#=
-function _repeat(::Type{CS}, ch::C, cnt::Integer) where {CS<:CSE,C<:Union{ASCIIChr,LatinChr}}
-    cnt == 0 && return empty_str(CS)
-    cnt < 0 && repeaterr(cnt)
-    buf, pnt = _allocate(UInt8, cnt)
-    cnt == 1 ? set_codeunit!(pnt, ch%UInt8) : _memset(pnt, ch%UInt8, cnt)
-    Str(CS, buf)
-end
-
-function _repeat(::Type{CS}, ch::C, cnt::Integer) where {CS<:CSE,C<:Union{UCS2Chr,UTF32Chr}}
-    cnt == 0 && return empty_str(CS)
-    cnt < 0 && repeaterr(cnt)
-    CU = codeunit(CS)
-    buf, pnt = _allocate(CU, cnt)
-    cnt == 1 ? set_codeunit!(pnt, ch%CU) : _aligned_set(pnt, ch%CU, cnt)
-    Str(CS, buf)
-end
-
-repeat(ch::ASCIIChr, cnt::Integer) = _repeat(ASCIICSE, ch, cnt)
-repeat(ch::LatinChr, cnt::Integer) = _repeat(LatinCSE, ch, cnt)
-repeat(ch::UCS2Chr,  cnt::Integer) = _repeat(UCS2CSE,  ch, cnt)
-repeat(ch::UTF32Chr, cnt::Integer) = _repeat(UTF32CSE, ch, cnt)
-=#
-
-function repeat(ch::C, cnt::Integer) where {C<:Union{ASCIIChr,LatinChr,_LatinChr}}
-    cnt == 0 && return empty_str(ASCIICSE)
-    cnt < 0 && repeaterr(cnt)
-    cu = ch%UInt8
-    buf, pnt = _allocate(UInt8, cnt)
-    _memset(pnt, cu, cnt)
-    Str((C == ASCIIChr || cu <= 0x7f) ? ASCIICSE : (C == _LatinChr ? _LatinCSE : LatinCSE), buf)
-end
-
-function repeat(ch::C, cnt::Integer) where {C<:Union{UCS2Chr,UTF32Chr}}
-    cnt == 0 && return empty_str(ASCIICSE)
-    cnt < 0 && repeaterr(cnt)
-    if ch%UInt32 <= 0xff
+function repeat(ch::C, cnt::Integer) where {C<:Union{ASCIIChr,LatinChr}}
+    if cnt > 0
+        cu = ch%UInt8
         buf, pnt = _allocate(UInt8, cnt)
-        cnt == 1 && set_codeunit!(pnt, ch%UInt8) : _memset(pnt, ch%UInt8, cnt)
-        Str(ifelse(ch%UInt8 <= 0x7f, ASCIICSE, LatinCSE), buf)
-    elseif C == UCS2Chr || ch%UInt32 <= 0xffff
-        buf, pnt = _allocate(UInt16, cnt)
-        cnt == 1 && set_codeunit!(pnt, ch%UInt16) : _aligned_set(pnt, ch%UInt16, cnt)
-        Str(UCS2CSE, buf)
+        _memset(pnt, cu, cnt)
+        C == ASCIIChr ? Str(ASCIICSE, buf) : Str(LatinCSE, buf)
     else
-        buf, pnt = _allocate(UInt32, cnt)
-        cnt == 1 && set_codeunit!(pnt, ch%UInt32) : _aligned_set(pnt, ch%UInt32, cnt)
-        Str(UTF32CSE, buf)
+        cnt < 0 ? repeaterr(cnt) : C == ASCIIStr ? empty_ascii : empty_latin
     end
 end
+
+function repeat(ch::_LatinChr, cnt::Integer)
+    if cnt > 0
+        cu = ch%UInt8
+        buf, pnt = _allocate(UInt8, cnt)
+        _memset(pnt, cu, cnt)
+        cu <= 0x7f ? Str(ASCIICSE, buf) : Str(_LatinCSE, buf)
+    else
+        cnt == 0 ? empty_ascii : repeaterr(cnt)
+    end
+end
+
+function repeat(ch::UCS2Chr, cnt::Integer)
+    if cnt > 0
+        buf, pnt = _allocate(UInt16, cnt)
+        cnt == 1 ? set_codeunit!(pnt, ch%UInt16) : _aligned_set(pnt, ch%UInt16, cnt)
+        Str(UCS2CSE, buf)
+    else
+        cnt == 0 ? empty_ucs2 : repeaterr(cnt)
+    end
+end
+
+function repeat(ch::UTF32Chr, cnt::Integer)
+    if cnt > 0
+        buf, pnt = _allocate(UInt32, cnt)
+        cnt == 1 ? set_codeunit!(pnt, ch%UInt32) : _aligned_set(pnt, ch%UInt32, cnt)
+        Str(UTF32CSE, buf)
+    else
+        cnt == 0 ? empty_utf32 : repeaterr(cnt)
+    end
+end
+
 
 # Definitions for C compatible strings, that don't allow embedded
 # '\0', and which are terminated by a '\0'

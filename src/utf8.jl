@@ -361,14 +361,18 @@ function _iterate_utf8(ch, str, pnt, pos)
     end
 end
 
-@propagate_inbounds function iterate(str::MS_UTF8, pos::Integer=1)
-    pos > ncodeunits(str) && return nothing
-    @boundscheck pos <= 0 && boundserr(str, pos)
+@inline function _iterate_utf8(str, pos)
     @preserve str begin
         pnt = pointer(str) + pos - 1
         ch = get_codeunit(pnt)
         ch <= 0x7f ? (UTF32Chr(ch), pos + 1) : _iterate_utf8(ch, str, pnt, pos)
     end
+end
+
+@propagate_inbounds function iterate(str::MS_UTF8, pos::Integer=1)
+    pos > ncodeunits(str) && return nothing
+    @boundscheck pos <= 0 && boundserr(str, pos)
+    _iterate_utf8(str, pos)
 end
 
 _iterate(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
@@ -377,11 +381,9 @@ _iterate(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) wher
     iterate(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
 
 # Gets next codepoint
-@propagate_inbounds function _next(::MultiCU, ::Type{T}, str::MS_UTF8,
-                                   pos::Int) where {T<:Chr}
-    len = ncodeunits(str)
-    @boundscheck 0 < pos <= len || boundserr(str, pos)
-    _iterate(MultiCU(), T, str, pos)
+@propagate_inbounds function _next(::MultiCU, ::Type{T}, str::MS_UTF8, pos::Int) where {T<:Chr}
+    @boundscheck 0 < pos <= ncodeunits(str) || boundserr(str, pos)
+    _iterate_utf8(str, pos)
 end
 
 _next(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
