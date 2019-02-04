@@ -556,7 +556,7 @@ end
     for (rng, flg) in ((0x00:0x9f, false), (0xa0:0xbf, true), (0xc0:0xff, false))
         for cont in rng
             @test is_valid(ST, UInt8[0xe0, cont]) == false
-            if ST === String && (0x80 <= cont <= 0x9f)
+            if false # ST === String && (0x80 <= cont <= 0x9f)
                 @test_broken is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg
             else
                 is_valid(ST, UInt8[0xe0, cont, 0x80]) == flg ||
