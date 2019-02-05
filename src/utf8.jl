@@ -525,22 +525,13 @@ _prevind(::MultiCU, str::Str{RawUTF8CSE}, pos::Int) =
     prevind(str.data, pos)
 
 #=
-_nextind(::MultiCU, str::SubString{<:Str{RawUTF8CSE}}, pos::Int, nchar::Int) =
-    nextind(str, pos, nchar)
-_nextind(::MultiCU, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) =
-    nextind(str, pos)
-_prevind(::MultiCU, str::SubString{<:Str{RawUTF8CSE}}, pos::Int, nchar::Int) =
-    prevind(str, pos, nchar)
-_prevind(::MultiCU, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) =
-    prevind(str, pos)
-=#
-
 const _ByteStr = Union{Str{ASCIICSE}, SubString{<:Str{ASCIICSE}},
-                       Str{UTF8CSE},  SubString{<:Str{UTF8CSE}},
-                       String}
+                       Str{UTF8CSE},  SubString{<:Str{UTF8CSE}}}
 
-string(c::_ByteStr...) = length(c) == 1 ? c[1]::UTF8Str : UTF8Str(_string(c))
+string(s::_ByteStr) = s
+string(s::_ByteStr, c::_ByteStr...) = UTF8Str(_string(c))
     # ^^ at least one must be UTF-8 or the ASCII-only method would get called
+=#
 
 function _reverse(::MultiCU, ::Type{UTF8CSE}, len, pnt::Ptr{T}) where {T<:CodeUnitTypes}
     buf, beg = _allocate(T, len)
