@@ -987,7 +987,8 @@ end
     @test String(sym) == string(Char(0xdcdb))
     @test Meta.lower(Main, sym) === sym
     res = string(Meta.parse(string(Char(0xdcdb)," = 1"),1,raise=false)[1])
-    @test res == """\$(Expr(:error, "invalid character \\\"\\udcdb\\\"\"))"""
+    @test startswith(res, "\$(Expr(:error, \"invalid character \\\"\\udcdb\\\"")
+    @test endswith(res,   "\"))")
 end
 end
 
