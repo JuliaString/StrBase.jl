@@ -120,8 +120,7 @@ sizeof(s::Str) = sizeof(s.data) + 1 - STR_KEEP_NUL
 """Codeunits of string as a Vector"""
 _data(s::Vector{UInt8}) = s
 _data(s::String)        = s
-_data(s::Str{<:Byte_CSEs}) =
-    @static V6_COMPAT ? Vector{UInt8}(s.data) : unsafe_wrap(Vector{UInt8}, s.data)
+_data(s::Str{<:Byte_CSEs}) = unsafe_wrap(Vector{UInt8}, s.data)
 
 """Pointer to codeunits of string"""
 pointer(s::Str{<:Byte_CSEs}) = pointer(s.data)

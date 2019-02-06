@@ -1,7 +1,7 @@
 # This file includes code that was formerly a part of Julia.
 # License is MIT: LICENSE.md
 
-V6_COMPAT || @testset "string escaping & unescaping" begin
+@testset "string escaping & unescaping" begin
     cx = Any[
         0x00000000      '\0'        "\\0"
         0x00000001      '\x01'      "\\x01"
@@ -150,7 +150,7 @@ end
     @test join("HELLO",'-') == "H-E-L-L-O"
     @test join(1:5, ", ", " and ") == "1, 2, 3, 4 and 5"
     @test join(["apples", "bananas", "pineapples"], ", ", " and ") == "apples, bananas and pineapples"
-    V6_COMPAT || @test_throws MethodError join(1, 2, 3, 4)
+    @test_throws MethodError join(1, 2, 3, 4)
 end
 
 #=
@@ -163,7 +163,7 @@ Base.start(jt::i9178)   = (jt.nnext=0 ; jt.ndone=0 ; 0)
 Base.done(jt::i9178, n) = (jt.ndone += 1 ; n > 3)
 _next(jt::i9178, n) = (jt.nnext += 1 ; ("$(jt.nnext),$(jt.ndone)", n+1))
 Base.next(jt::i9178, n) = _next(jt, n)
-@static NEW_ITERATE && (Base.iterate(jt::i9178, n=1) = _next(jt, n))
+Base.iterate(jt::i9178, n=1) = _next(jt, n)
 @test join(i9178(0,0), ";") == "1,1;2,2;3,3;4,4"
 =#
 
@@ -177,7 +177,7 @@ myio = IOBuffer()
 join(myio, "", "", 1)
 @test isempty(take!(myio))
 
-V6_COMPAT || @testset "unescape_string ArgumentErrors" begin
+@testset "unescape_string ArgumentErrors" begin
     @test_throws ArgumentError unescape_string(IOBuffer(), string('\\',"xZ"))
     @test_throws ArgumentError unescape_string(IOBuffer(), string('\\',"777"))
 end

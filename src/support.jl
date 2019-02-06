@@ -696,11 +696,9 @@ end
 first(str::Str, n::Integer) = str[1:min(end, nextind(str, 0, n))]
 last(str::Str, n::Integer)  = str[max(1, prevind(str, ncodeunits(str)+1, n)):end]
 
-const Chrs = @static V6_COMPAT ? Union{Char,AbstractChar} : Chr
-
 # low level mem support functions
 
-const HAS_WMEM = !(@static V6_COMPAT ? is_windows() : Sys.iswindows())
+const HAS_WMEM = !Sys.iswindows()
 
 @static if HAS_WMEM
 
@@ -900,7 +898,7 @@ end
 
 (^)(str::T, cnt::Integer) where {T<:Str} = repeat(str, cnt)
 
-function repeat(ch::CP, cnt::Integer) where {CP <: Chrs}
+function repeat(ch::CP, cnt::Integer) where {CP <: Chr}
     C = codepoint_cse(CP)
     cnt > 1 && return Str(C, _repeat(EncodingStyle(C), C, codepoint(ch), cnt))
     cnt == 1 && return _convert(C, codepoint(ch))
@@ -908,7 +906,7 @@ function repeat(ch::CP, cnt::Integer) where {CP <: Chrs}
     repeaterr(cnt)
 end
 
-(^)(ch::CP, cnt::Integer) where {CP <: Chrs} = repeat(ch, cnt)
+(^)(ch::CP, cnt::Integer) where {CP <: Chr} = repeat(ch, cnt)
 
 function repeat(ch::C, cnt::Integer) where {C<:Union{ASCIIChr,LatinChr}}
     if cnt > 0

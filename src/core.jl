@@ -130,18 +130,16 @@ end
 @propagate_inbounds nextind(str::MaybeSub{T}, i::Int, nchar::Int) where {T<:Str} =
     (@_inline_meta(); _nextind(EncodingStyle(T), str, i, nchar))
 
-@static if NEW_ITERATE
-    @propagate_inbounds function _iterate(::SingleCU, T, str, pos)
-        @_inline_meta()
-        T(get_codeunit(str, pos)), pos + 1
-    end
-    @propagate_inbounds function iterate(str::MaybeSub{T}, pos::Integer=firstindex(str)
-                                         )::Union{Nothing,Tuple{eltype(T),Int}} where {T<:Str}
-        @_inline_meta()
-        pos > ncodeunits(str) && return nothing
-        @boundscheck pos <= 0 && boundserr(str, pos)
-        _iterate(EncodingStyle(T), eltype(T), str, pos)
-    end
+@propagate_inbounds function _iterate(::SingleCU, T, str, pos)
+    @_inline_meta()
+    T(get_codeunit(str, pos)), pos + 1
+end
+@propagate_inbounds function iterate(str::MaybeSub{T}, pos::Integer=firstindex(str)
+                                     )::Union{Nothing,Tuple{eltype(T),Int}} where {T<:Str}
+    @_inline_meta()
+    pos > ncodeunits(str) && return nothing
+    @boundscheck pos <= 0 && boundserr(str, pos)
+    _iterate(EncodingStyle(T), eltype(T), str, pos)
 end
 
 @propagate_inbounds index(str::MaybeSub{T}, i::Integer) where {T<:Str} =
@@ -154,11 +152,6 @@ end
 
 @propagate_inbounds reverseind(str::MaybeSub{T}, i::Integer) where {T<:Str} =
     (@_inline_meta(); _index(EncodingStyle(T), str, Int(ncodeunits(str) - i + 1)))
-
-@static if V6_COMPAT
-    @propagate_inbounds ind2chr(str::MaybeSub{T}, i::Int) where {T<:Str} = length(str, 1, i)
-    @propagate_inbounds chr2ind(str::MaybeSub{T}, i::Int) where {T<:Str} = nextind(str, 0, i)
-end
 
 @propagate_inbounds function is_valid(str::MaybeSub{T}, i::Integer) where {T<:Str}
     @_inline_meta()

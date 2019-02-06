@@ -36,24 +36,22 @@ function testuni(T)
     end
 
     # Substring provided with invalid end index throws BoundsError
-    if !V6_COMPAT
-        @test_throws StringIndexError  SubString(s1, 1, 2)
-        @test_throws StringIndexError  SubString(s1, 1, 3)
-        @test_throws BoundsError SubString(s1, 1, 4)
+    @test_throws StringIndexError  SubString(s1, 1, 2)
+    @test_throws StringIndexError  SubString(s1, 1, 3)
+    @test_throws BoundsError SubString(s1, 1, 4)
 
-        # Substring provided with invalid start index throws BoundsError
-        @test SubString(s2, 1, 1) == s1
-        @test SubString(s2, 1, 4) == s2
-        @test SubString(s2, 4, 4) == s1
+    # Substring provided with invalid start index throws BoundsError
+    @test SubString(s2, 1, 1) == s1
+    @test SubString(s2, 1, 4) == s2
+    @test SubString(s2, 4, 4) == s1
 
-        @test_throws StringIndexError  SubString(s2, 1, 2)
-        @test_throws StringIndexError  SubString(s2, 1, 5)
-        @test_throws StringIndexError  SubString(s2, 2, 4)
-        @test_throws BoundsError SubString(s2, 0, 1)
-        @test_throws BoundsError SubString(s2, 0, 4)
-        @test_throws BoundsError SubString(s2, 1, 7)
-        @test_throws BoundsError SubString(s2, 4, 7)
-    end
+    @test_throws StringIndexError  SubString(s2, 1, 2)
+    @test_throws StringIndexError  SubString(s2, 1, 5)
+    @test_throws StringIndexError  SubString(s2, 2, 4)
+    @test_throws BoundsError SubString(s2, 0, 1)
+    @test_throws BoundsError SubString(s2, 0, 4)
+    @test_throws BoundsError SubString(s2, 1, 7)
+    @test_throws BoundsError SubString(s2, 4, 7)
 
     # tests for SubString of more than one multibyte `Char` string
     # we are consistent with `getindex` for `String`
@@ -63,13 +61,11 @@ function testuni(T)
     end
 
     # index beyond lastindex(s2)
-    if !V6_COMPAT
-        for idx in [2:3; 5:6]
-            @test_throws StringIndexError SubString(s2, 1, idx)
-        end
-        for idx in 7:8
-            @test_throws BoundsError SubString(s2, 1, idx)
-        end
+    for idx in [2:3; 5:6]
+        @test_throws StringIndexError SubString(s2, 1, idx)
+    end
+    for idx in 7:8
+        @test_throws BoundsError SubString(s2, 1, idx)
     end
 
     str = T("aa\u2200\u2222bb")
@@ -79,14 +75,9 @@ function testuni(T)
     write(b, u)
     @test String(take!(b)) == "\u2200\u2222"
 
-    V6_COMPAT || @test_throws StringIndexError SubString(str, 4, 5)
-    if NEW_ITERATE
-        @test_throws BoundsError iterate(u, 0)
-        @test iterate(u, 7) === nothing
-    else
-        @test_throws BoundsError next(u, 0)
-        @test_throws BoundsError next(u, 7)
-    end
+    @test_throws StringIndexError SubString(str, 4, 5)
+    @test_throws BoundsError iterate(u, 0)
+    @test iterate(u, 7) === nothing
     @test_throws BoundsError getindex(u, 0)
     @test_throws BoundsError getindex(u, 7)
     @test_throws BoundsError getindex(u, 0:1)
@@ -101,7 +92,7 @@ function testuni(T)
 
 
     str = T("føøbar")
-    V6_COMPAT || @test_throws BoundsError SubString(str, 10, 10)
+    @test_throws BoundsError SubString(str, 10, 10)
     u = SubString(str, 4, 3)
     @test length(u) == 0
     b = IOBuffer()
@@ -164,10 +155,10 @@ function testuni(T)
                     @test is_valid(ss, j) == is_valid(s, j)
                 end
             else
-                V6_COMPAT || @test_throws StringIndexError SubString(s, 1, i)
+                @test_throws StringIndexError SubString(s, 1, i)
             end
         elseif i > 0
-            V6_COMPAT || @test_throws BoundsError SubString(s, 1, i)
+            @test_throws BoundsError SubString(s, 1, i)
         else
             @test SubString(s, 1, i) == ""
         end
@@ -220,7 +211,6 @@ function teststr(T)
     ss = SubString(str,1:0)
     @test length(ss)==0
 
-    if !V6_COMPAT
     @test_throws BoundsError SubString(str, 14, 20)  #start indexing beyond source string length
     @test_throws BoundsError SubString(str, 10, 16)  #end indexing beyond source string length
 
@@ -228,7 +218,6 @@ function teststr(T)
     @test_throws BoundsError SubString(T(""), 1, 1)  #empty source string, identical start and end index
     @test_throws BoundsError SubString(T(""), 10, 12)
     @test SubString(T(""), 12, 10) == ""
-    end
 
     @test SubString(T("foobar"), big(1), big(3)) == "foo"
 
@@ -247,12 +236,10 @@ function teststr(T)
             @test SubString(u, 2, idx) == u[2:idx]
             @test SubString(u, 2:idx) == u[2:idx]
         end
-        if !V6_COMPAT
-            @test_throws BoundsError SubString(u, 1, 10)
-            @test_throws BoundsError SubString(u, 1:10)
-            @test_throws BoundsError SubString(u, 20:30)
-            @test_throws BoundsError SubString(u, -1:10)
-        end
+        @test_throws BoundsError SubString(u, 1, 10)
+        @test_throws BoundsError SubString(u, 1:10)
+        @test_throws BoundsError SubString(u, 20:30)
+        @test_throws BoundsError SubString(u, -1:10)
         @test SubString(u, 20:15) == ""
         @test SubString(u, -1, -10) == ""
         @test SubString(SubString(T("123"), 1, 2), -10, -20) == ""
@@ -275,8 +262,8 @@ function teststr(T)
     end
 
     # issue #5870
-    V6_COMPAT || @test !occurs_in(Regex(T("aa")), SubString(T(""),1,0))
-    V6_COMPAT || @test occurs_in(Regex(T("")), SubString(T(""),1,0))
+    @test !occurs_in(Regex(T("aa")), SubString(T(""),1,0))
+    @test occurs_in(Regex(T("")), SubString(T(""),1,0))
 
     # is_valid, length, prevind, nextind for SubString{String}
     let s = T("lorem ipsum"),
@@ -324,7 +311,7 @@ function teststr(T)
     @test nextind(ss, 5, 1) == 6
     @test_throws BoundsError nextind(ss, 6, 1)
 
-    V6_COMPAT || @testset "reverseind of empty strings" begin
+    @testset "reverseind of empty strings" begin
         for s in ("",
                   SubString(T(""), 1, 0),
                   SubString(T("ab"), 1, 0),

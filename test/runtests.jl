@@ -3,17 +3,9 @@
 
 using ModuleInterfaceTools
 
-@static V6_COMPAT || (using Random)
+using Random
 
 @api test StrBase
-
-# Add definitions not present in v0.6.2 for GenericString
-@static if V6_COMPAT
-    import StrAPI: ncodeunits, codeunits, codeunit
-    ncodeunits(s::GenericString) = ncodeunits(s.string)
-    codeunit(s::GenericString) = codeunit(s.string)
-    codeunit(s::GenericString, i::Integer) = codeunit(s.string, i)
-end
 
 # Should test GenericString also, once overthing else is working
 const UnicodeStringTypes = (String, UTF8Str, )

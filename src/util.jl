@@ -100,9 +100,7 @@ end
 
 function checkkeep(keepempty, keep, fun)
     keep === nothing && return keepempty
-    @static V6_COMPAT ||
-        Base.depwarn("The `keep` keyword argument is deprecated; use `keepempty` instead", fun)
-    keep
+    Base.depwarn("The `keep` keyword argument is deprecated; use `keepempty` instead", fun)
 end
 
 splitarr(::Type{C}) where {C<:CSE} = SubString{Str{basecse(C),Nothing,Nothing,Nothing}}[]

@@ -51,7 +51,6 @@ for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UniStr, UTF8Str, UTF16Str)
             cu = uppercase(ch)
             cu > tm && continue
             cl = lowercase(ch)
-            flg = V6_COMPAT && c in titlelst
             for (i, str) in enumerate(("$ch", "$ch test Beg", "test End $ch", "test $ch Mid"))
                 t = c >>> 9
                 cvtstr = convert(ST, str)
@@ -60,11 +59,11 @@ for ST in (ASCIIStr, LatinStr, UCS2Str, UTF32Str, UniStr, UTF8Str, UTF16Str)
                 #@test titlecase(str) == titlecase(cvtstr)
                 i > 2 && continue
                 @test lowercase_first(str) == lowercase_first(cvtstr)
-                if flg
-                    @test_broken uppercase_first(str) == uppercase_first(cvtstr)
-                else
+                #if flg
+                #@test_broken uppercase_first(str) == uppercase_first(cvtstr)
+                #else
                     @test uppercase_first(str) == uppercase_first(cvtstr)
-                end
+                #end
             end
         end
     end
@@ -107,13 +106,7 @@ mutable struct CharStr <: AbstractString
     chars::Vector{Char}
     CharStr(x) = new(collect(x))
 end
-@static if NEW_ITERATE
-    iterate(x::CharStr, i::Int=1) = iterate(x.chars, i)
-else
-    start(x::CharStr) = 1
-    next(x::CharStr, i::Int) = next(x.chars, i)
-    done(x::CharStr, i::Int) = i > length(x.chars)
-end
+iterate(x::CharStr, i::Int=1) = iterate(x.chars, i)
 
 lastindex(x::CharStr) = lastindex(x.chars)
 ncodeunits(x::CharStr) = lastindex(x.chars)
@@ -135,7 +128,6 @@ function testbasic(::Type{ST}, ::Type{C}) where {ST, C}
     @test abce_str == "abc!"
     v = [0x61,0x62,0x63,0x21]
     @test ST(v) == abce_str # && isempty(v)
-    @static if !V6_COMPAT
         if ST === String # IS_WORKING # Need to add constructor with range
             @test isempty(v)
             @test ST(0x61:0x63) == abc_str
@@ -151,14 +143,12 @@ function testbasic(::Type{ST}, ::Type{C}) where {ST, C}
         @test s == ab_str
         resize!(x, 1)
         @test s == ab_str
-    end
 
     @test isempty(ST(string()))
     @test eltype(GenericString) == Char
     @test firstindex(abc_str) == 1
     @test cmp(ab_str,abc_str) == -1
 
-    @static if !V6_COMPAT
         if ST === String # IS_WORKING
             @test typemin(ST) === ST("")
             @test typemin(abc_str) === ST("")
@@ -173,7 +163,6 @@ function testbasic(::Type{ST}, ::Type{C}) where {ST, C}
                 @eval @test ($x === $y) == (objectid($x) == objectid($y))
             end
         end
-    end
 end
 
 @testset "{starts,ends}_with" begin
@@ -208,7 +197,6 @@ end
     @test sizeof(ST("\u2222")) == 3
 end
 
-@static if !V6_COMPAT
 # issue #3597
 @test string(GenericString(ST("Test"))[1:1], ST("X")) == "TX"
 
@@ -220,8 +208,6 @@ end
         n = (T != BigInt) ? rand(T) : BigInt(rand(Int128))
         @test parse(T, ST(string(n, base = b)),  base = b) == n
     end
-    end
-end
 end
 
 @testset "Symbol and gensym" begin
@@ -246,33 +232,25 @@ end
 end
 
 @testset "issue #7248" begin
-    @static if !V6_COMPAT
-        @test_throws BoundsError length(hello1, 1, -1)
-        @test_throws BoundsError prevind(hello1, 0, 1)
-        @test_throws BoundsError length(hello2, 1, -1)
-        @test_throws BoundsError prevind(hello2, 0, 1)
-        @test_throws BoundsError length(hello1, 1, 10)
-        ST === String && @test nextind(hello1, 0, 10) == 10
-        @test_throws BoundsError length(hello2, 1, 10) == 9
-        ST == String && @test nextind(ST("hellø"), 0, 10) == 11
-    end
+    @test_throws BoundsError length(hello1, 1, -1)
+    @test_throws BoundsError prevind(hello1, 0, 1)
+    @test_throws BoundsError length(hello2, 1, -1)
+    @test_throws BoundsError prevind(hello2, 0, 1)
+    @test_throws BoundsError length(hello1, 1, 10)
+    ST === String && @test nextind(hello1, 0, 10) == 10
+    @test_throws BoundsError length(hello2, 1, 10) == 9
+    ST == String && @test nextind(ST("hellø"), 0, 10) == 11
     for ind in (0, 6, 0:3, 4:6, [0:3;], [4:6;])
         @eval @test_throws BoundsError checkbounds($hello1, $ind)
     end
     for ind in (1, 5, 1:3, 3:5, [1:3;], [3:5;])
-        @static if V6_COMPAT
-            @eval @test checkbounds($hello1, $ind)
-        else
-            @eval @test checkbounds($hello1, $ind) === nothing
-        end
+        @eval @test checkbounds($hello1, $ind) === nothing
     end
-    @static if !V6_COMPAT
-        f = false
-        t = true
-        for (ind, p) in ((0, f), (1, t), (5, t), (6, f), (0:5, f), (1:6, f),
-                         (1:5, t), ([0:5;], f), ([1:6;], f), ([1:5;], t))
-            @eval @test checkbounds(Bool, $hello1, $ind) === $p
-        end
+    f = false
+    t = true
+    for (ind, p) in ((0, f), (1, t), (5, t), (6, f), (0:5, f), (1:6, f),
+                     (1:5, t), ([0:5;], f), ([1:6;], f), ([1:5;], t))
+        @eval @test checkbounds(Bool, $hello1, $ind) === $p
     end
 end
 
@@ -285,13 +263,10 @@ end
     @test SubString(hello2, 1, 5)[10:9] == ""
     @test SubString(hello2, 1, 0)[10:9] == ""
     @test SubString(emptystr, 1, 0)[10:9] == ""
-    @static if !V6_COMPAT
-        @test_throws BoundsError SubString(emptystr, 1, 6)
-        @test_throws BoundsError SubString(emptystr, 1, 1)
-    end
+    @test_throws BoundsError SubString(emptystr, 1, 6)
+    @test_throws BoundsError SubString(emptystr, 1, 1)
 end
 
-@static if !V6_COMPAT
 @testset "issue #22500 (using `get()` to index strings with default returns)" begin
     utf8_str = ST("我很喜欢Julia")
 
@@ -305,7 +280,6 @@ end
 
     # Test that indexing into the middle of a character throws
     @test_throws StringIndexError get(utf8_str, 2, cvtchar(C,'X'))
-end
 end
 
 # issue #7764
@@ -322,11 +296,7 @@ let
     @test str_next(srep, 7) == ('β',9)
 
     @test srep[7] == 'β'
-    @static if V6_COMPAT
-        @test_throws StringError srep[8]
-    else
-        @test_throws StringIndexError srep[8]
-    end
+    @test_throws StringIndexError srep[8]
 end
 
 # make sure substrings do not accept code unit if it is not start of codepoint
@@ -334,7 +304,7 @@ let s = ST("x\u0302")
     @test s[1:2] == s
     @test_throws BoundsError s[0:3]
     @test_throws BoundsError s[1:4]
-    V6_COMPAT || @test_throws StringIndexError s[1:3]
+    @test_throws StringIndexError s[1:3]
 end
 
 @testset "issue #9781" begin
@@ -350,18 +320,16 @@ end
 end
 
 @testset "AbstractString functions" begin
-    @static if !V6_COMPAT
-        tstr = tstStringType(unsafe_wrap(Vector{UInt8},"12"))
-        @test_throws MethodError ncodeunits(tstr)
-        @test_throws MethodError codeunit(tstr)
-        @test_throws MethodError codeunit(tstr, 1)
-        @test_throws MethodError codeunit(tstr, true)
-        @test_throws MethodError isvalid(tstr, 1)
-        @test_throws MethodError isvalid(tstr, true)
-        @test_throws MethodError str_next(tstr, 1)
-        @test_throws MethodError str_next(tstr, true)
-        @test_throws MethodError lastindex(tstr)
-    end
+    tstr = tstStringType(unsafe_wrap(Vector{UInt8},"12"))
+    @test_throws MethodError ncodeunits(tstr)
+    @test_throws MethodError codeunit(tstr)
+    @test_throws MethodError codeunit(tstr, 1)
+    @test_throws MethodError codeunit(tstr, true)
+    @test_throws MethodError isvalid(tstr, 1)
+    @test_throws MethodError isvalid(tstr, true)
+    @test_throws MethodError str_next(tstr, 1)
+    @test_throws MethodError str_next(tstr, true)
+    @test_throws MethodError lastindex(tstr)
 
     gstr = GenericString("12")
     @test string(gstr) isa GenericString
@@ -379,47 +347,37 @@ end
 
     foobar = ST("foobar")
 
-    @static if NEW_ITERATE
-        @test iterate(eachindex(foobar), 7) === nothing
-    else
-        @test done(eachindex(foobar), 7)
-    end
+    @test iterate(eachindex(foobar), 7) === nothing
     @test first(eachindex(foobar)) === 1
-    @static if !V6_COMPAT
-        @test first(eachindex(ST(""))) === 1
-        @test last(eachindex(foobar)) === lastindex(foobar)
-        @test nextind(ST("fóobar"), 0, 3) == 4
-        @test Int == eltype(Base.EachStringIndex) ==
-                     eltype(Base.EachStringIndex{String}) ==
-                     eltype(Base.EachStringIndex{GenericString}) ==
-                     eltype(eachindex(foobar)) == eltype(eachindex(gstr))
-    end
+    @test first(eachindex(ST(""))) === 1
+    @test last(eachindex(foobar)) === lastindex(foobar)
+    @test nextind(ST("fóobar"), 0, 3) == 4
+    @test Int == eltype(Base.EachStringIndex) ==
+        eltype(Base.EachStringIndex{String}) ==
+        eltype(Base.EachStringIndex{GenericString}) ==
+        eltype(eachindex(foobar)) == eltype(eachindex(gstr))
     @test map(uppercase, ST("foó")) == ST("FOÓ")
 
     @test Symbol(gstr) == Symbol("12")
 
-    V6_COMPAT || @test sizeof(gstr) == 2
-    V6_COMPAT || @test ncodeunits(gstr) == 2
+    @test sizeof(gstr) == 2
+    @test ncodeunits(gstr) == 2
     @test length(gstr) == 2
     @test length(GenericString("")) == 0
 
     @test nextind(1:1, 1) == 2
     @test nextind([1], 1) == 2
 
-    V6_COMPAT || @test length(gstr, 1, 2) == 2
+    @test length(gstr, 1, 2) == 2
 
     # no string promotion
     let svec = [s"12", GenericString("12"), SubString("123", 1, 2)]
         @test all(x -> x == "12", svec)
-        V6_COMPAT || @test svec isa Vector{AbstractString}
+        @test svec isa Vector{AbstractString}
     end
 end
 
-@static if V6_COMPAT
-    check_tryparse(T, v, r) = (r === nothing ? isnull(tryparse(T, v)) : get(tryparse(T, v)) == r)
-else
-    check_tryparse(T, v, r) = (tryparse(T, v) == r)
-end
+check_tryparse(T, v, r) = (tryparse(T, v) == r)
 
 @testset "issue #10307" begin
     #@test typeof(map(x -> parse(Int16, x), AbstractString[])) == Vector{Int16}
@@ -469,11 +427,9 @@ end
               Float64, Float32]
         @test check_tryparse(T, ST("1\0"), nothing)
     end
-    @static if !V6_COMPAT
     let s = Unicode.normalize(ST("tést"), :NFKC)
         @test unsafe_string(Base.unsafe_convert(Cstring, Base.cconvert(Cstring, s))) == s
         @test unsafe_string(Base.unsafe_convert(Cstring, Symbol(s))) == s
-    end
     end
     @test_throws ArgumentError Base.unsafe_convert(Cstring, Base.cconvert(Cstring, ST("ba\0d")))
     
@@ -525,7 +481,7 @@ end
         is_valid(ST, val) == pass ||
             println(idx, ":", ST, " -> ", val)
         @test is_valid(ST, val) == pass
-        V6_COMPAT || @test is_valid(C, val[1]) == pass
+        @test is_valid(C, val[1]) == pass
     end
 
     # Issue #11203
@@ -626,13 +582,13 @@ end
     str = ST(s)
     @test ascii(str) == s
     @test typeof(ascii(str)) == String
-    (!V6_COMPAT || ST === String) && @test ascii(GenericString(str)) == s
+    @test ascii(GenericString(str)) == s
     @test typeof(ascii(GenericString(str))) == String
     @test_throws ArgumentError ascii(ST("Hello, ∀"))
-    V6_COMPAT || @test_throws ArgumentError ascii(GenericString(ST("Hello, ∀")))
+    @test_throws ArgumentError ascii(GenericString(ST("Hello, ∀")))
 end
 @testset "issue #17271: lastindex() doesn't throw an error even with invalid strings" begin
-    V6_COMPAT || @test lastindex(String(b"\x90")) == 1
+    @test lastindex(String(b"\x90")) == 1
     @test lastindex(String(b"\xce")) == 1
 end
 # issue #17624, missing getindex method for String
@@ -660,7 +616,7 @@ end
 end
 
 @testset "repeat strings" begin
-    V6_COMPAT || @inferred repeat(GenericString("x"), 1)
+    @inferred repeat(GenericString("x"), 1)
     @test repeat("xx",3) == repeat("x",6) == repeat(GenericString("x"), 6) == "xxxxxx"
     @test repeat("αα",3) == repeat("α",6) == repeat(GenericString("α"), 6) == "αααααα"
     @test repeat("x",1)  == "x"^1 == GenericString("x")^1 == "x"
@@ -704,16 +660,13 @@ end
 
 @testset "concatenation" begin
     @test ab_str * ST("cd") == abcd_str
-    @static if !V6_COMPAT
-        @test C('a') * ST("bc") == abc_str
-        @test ab_str * C('c') == abc_str
-        @test C('a') * C('b') == ab_str
-        @test C('a') * ST("b") * C('c') == abc_str
-        @test a_str * C('b') * C('c') == abc_str
-    end
+    @test C('a') * ST("bc") == abc_str
+    @test ab_str * C('c') == abc_str
+    @test C('a') * C('b') == ab_str
+    @test C('a') * ST("b") * C('c') == abc_str
+    @test a_str * C('b') * C('c') == abc_str
 end
 
-@static if !V6_COMPAT
 @testset "unrecognized escapes in string/char literals" begin
     @test_throws Meta.ParseError parse(Expr, ST("\"\\.\""))
     @test_throws Meta.ParseError parse(Expr, ST("\'\\.\'"))
@@ -910,7 +863,6 @@ end
         @test collect(u) == b"∀x∃y"
     end
 
-    if !V6_COMPAT # ST === String # IS_WORKING
     # PR #25535
     let v = [0x40,0x41,0x42]
         @test ST(view(v, 2:3)) == "AB"
@@ -927,7 +879,6 @@ end
             s in [ST(randstring(rng, i)), ST(randstring(rng, "∀∃α1", i)), ST(rand(rng, Char, i))]
             @test length(s) == length(GenericString(s))
         end
-    end
     end
 
     # conversion of SubString to the same type, issue #25525
@@ -975,7 +926,6 @@ for ST in UnicodeStringTypes
     C = eltype(ST)
     @testset "Basic String Tests: $ST, $C" begin testbasic(ST, C) end
 end
-@static if !V6_COMPAT
 for ST in (BinaryStr, Text1Str, String)
     @testset "Binary String Tests: $ST" begin testbin(ST) end
 end
@@ -990,17 +940,14 @@ end
     @test startswith(res, "\$(Expr(:error, \"invalid character \\\"\\udcdb\\\"")
     @test endswith(res,   "\"))")
 end
-end
 
 @testset "invalid code point" begin
     s = String([0x61, 0xba, 0x41])
     @test !is_valid(s)
-    @static if !V6_COMPAT # This has to do with the #24999 change to character representation
-        @test s[2] == reinterpret(Char, UInt32(0xba) << 24)
-    end
+    # This has to do with the #24999 change to character representation
+    @test s[2] == reinterpret(Char, UInt32(0xba) << 24)
 end
 
-@static if !V6_COMPAT
 @testset "issue #24388" begin
     let v = unsafe_wrap(Vector{UInt8}, "abc")
         s = String(v)
@@ -1008,7 +955,6 @@ end
         push!(v, UInt8('x'))
         @test s == "abc"
     end
-end
 end
 
 @testset "Unicode Strings" begin

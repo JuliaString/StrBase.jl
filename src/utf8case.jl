@@ -3,11 +3,6 @@ Copyright 2018 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
 
-@static if V6_COMPAT
-    Base.hex(chr::C)      where {C<:Chr} = hex(codepoint(chr))
-    Base.hex(chr::C, pad) where {C<:Chr} = hex(codepoint(chr), pad)
-end
-
 const CT = ChrBase.CaseTables
 
 function _check_char(ch, tab)
@@ -115,11 +110,9 @@ function _upper_utf8(beg, off, len)
             out += 1
         elseif ch < 0xc4
             ch = (ch << 6) | (get_codeunit(pnt += 1) & 0x3f)
-            if !V6_COMPAT && ch == 0xdf
-                out = output_utf8_3byte!(out, 0x1e9e)
-            else
-                out = output_utf8_2byte!(out, _upper_bmp(ch))
-            end
+            out = (ch == 0xdf
+                   ? output_utf8_3byte!(out, 0x1e9e)
+                   : output_utf8_2byte!(out, _upper_bmp(ch)))
         elseif ch < 0xe0
             # 2 byte
             c16 = get_utf8_2byte(pnt += 1, ch)
@@ -223,7 +216,7 @@ end
 @inline function _check_uppercase(ch, pnt)
     # ch < 0xc2 && return false (not needed, validated UTF-8 string)
     cont = get_codeunit(pnt)
-    ch == 0xc3 ? ((cont > (V6_COMPAT ? 0x9f : 0x9e)) & (cont != 0xb7)) : (cont == 0xb5)
+    ch == 0xc3 ? ((cont > 0x9e) & (cont != 0xb7)) : (cont == 0xb5)
 end
 
 function uppercase(str::MaybeSub{S}) where {C<:UTF8CSE,S<:Str{C}}

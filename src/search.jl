@@ -120,8 +120,6 @@ const _not_found = 0:-1
 found(::Type{<:AbstractString}, v) = v != 0
 find_result(::Type{<:AbstractString}, v) = v
 
-@static if !V6_COMPAT
-
 nothing_sentinel(i) = first(i) == 0 ? nothing : i
 Base.findfirst(a, b::Str)   = nothing_sentinel(find(First, a, b))
 Base.findlast(a, b::Str)    = nothing_sentinel(find(Last, a, b))
@@ -131,8 +129,6 @@ Base.findfirst(a::Str, b::AbstractString)   = nothing_sentinel(find(First, a, b)
 Base.findlast(a::Str, b::AbstractString)    = nothing_sentinel(find(Last, a, b))
 Base.findnext(a::Str, b::AbstractString, i) = nothing_sentinel(find(Fwd, a, b, i))
 Base.findprev(a::Str, b::AbstractString, i) = nothing_sentinel(find(Rev, a, b, i))
-
-end
 
 function find(::Type{D}, fun::Function, str::AbstractString, pos::Integer) where {D<:Direction}
     pos < Int(D===Fwd) && (@boundscheck boundserr(str, pos); return 0)
