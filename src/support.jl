@@ -343,6 +343,8 @@ function fast_check_string(beg::Ptr{UInt8}, len)
             continue
         # Check UTF-8 encoding
         elseif ch < 0xe0
+            # Check that not a continuation character
+            ch < 0xc0 && strerror(StrErrors.NOT_LEAD, pnt - beg, ch)
             # 2-byte UTF-8 sequence (i.e. characters 0x80-0x7ff)
             (pnt += 1) < fin || strerror(StrErrors.SHORT, pnt - beg, ch)
             checkcont(pnt) || strerror(StrErrors.INVALID, pnt - beg - 1, ch)
