@@ -313,7 +313,7 @@ end
 
 @inline function alignpnt(beg::Ptr)
     align = reinterpret(UInt, beg)
-    align, reinterpret(Ptr{UInt64}, align & (~CHUNKMSK)%UInt)
+    align, reinterpret(Ptr{UInt}, align & (~CHUNKMSK)%UInt)
 end
 
 @inline function skipascii(beg::Ptr{UInt8}, fin::Ptr{UInt8})
@@ -387,7 +387,7 @@ end
 const _bmp_mask = 0xd800_d800_d800_d800
 @inline _mask_allsurr(v)  = xor((v | v<<1 | v<<2 | v<<3 | v<<4) & _hi_bit_16, _hi_bit_16)
 
-@inline _get_bmp_mask(v::UInt64) = _mask_allsurr(xor(v, _bmp_mask))
+@inline _get_bmp_mask(v::UInt) = _mask_allsurr(xor(v, _bmp_mask))
 
 const msk_ascii_16 = 0xff80ff80ff80ff80
 const msk_latin_16 = 0xff00ff00ff00ff00

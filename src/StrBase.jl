@@ -2,7 +2,7 @@ __precompile__(true)
 """
 StrBase package
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones,
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones,
 and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based partly on code in LegacyStrings that used to be part of Julia
@@ -23,7 +23,7 @@ using ModuleInterfaceTools
 
 @api develop! check_string, unsafe_check_string, fast_check_string, skipascii, skipbmp,
               countmask, count_chars, _count_mask_al, _count_mask_ul, count_latin,
-              _copysub, _cvtsize, _repeat, empty_str, _data, _pnt64, _str,
+              _copysub, _cvtsize, _repeat, empty_str, _data, _pntchunk, _str,
               ValidatedStyle, MutableStyle, EqualsStyle, CanContain
 
 @api develop LineCounts, CharTypes, CharStat, maxbit, calcstats, check_continuation,

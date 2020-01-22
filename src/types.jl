@@ -1,10 +1,9 @@
 #=
 Basic types for strings
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
-const STR_KEEP_NUL    = true  # keep nul byte placed by String
 
 # Note: this is still in transition to expressing character set, encoding
 # and optional cached info for hashes, UTF-8/UTF-16 encodings, subsets, etc.
@@ -74,7 +73,9 @@ typemin(::Type{T}) where {T<:Str} = empty_str(T)
 typemin(::T) where {T<:Str} = empty_str(T)
 
 """Union type for fast dispatching"""
-const UniStr = Union{ASCIIStr, _LatinStr, _UCS2Str, _UTF32Str}
+#const UniStr = Union{ASCIIStr, _LatinStr, _UCS2Str, _UTF32Str}
+const UniCSE = Union{ASCIICSE, _LatinCSE, _UCS2CSE, _UTF32CSE}
+const UniStr = Str{<:UniCSE, Nothing, Nothing, Nothing}
 show(io::IO, ::Type{UniStr}) = print(io, :UniStr)
 
 # Display BinaryCSE as if String
@@ -82,10 +83,10 @@ show(io::IO, str::T) where {T<:Str{BinaryCSE}} = show(io, str.data)
 show(io::IO, str::SubString{T}) where {T<:Str{BinaryCSE}} =
     @inbounds show(io, SubString(str.string.data, str.offset+1, str.offset+lastindex(str)))
 
-_allocate(len) = Base._string_n((len+STR_KEEP_NUL-1)%Csize_t)
+_allocate(len) = Base._string_n(len%Csize_t)
 
 function _allocate(::Type{T}, len) where {T <: CodeUnitTypes}
-    buf = _allocate((len+STR_KEEP_NUL-1) * sizeof(T))
+    buf = _allocate(len * sizeof(T))
     buf, reinterpret(Ptr{T}, pointer(buf))
 end
 
@@ -115,7 +116,7 @@ promote_rule(::Type{String}, ::Type{<:Str}) = String
 promote_rule(::Type{<:Str{S}}, ::Type{<:Str{T}}) where {S,T} =
     (P = promote_rule(S,T)) === Union{} ? Union{} : Str{P}
 
-sizeof(s::Str) = sizeof(s.data) + 1 - STR_KEEP_NUL
+sizeof(s::Str) = sizeof(s.data)
 
 """Codeunits of string as a Vector"""
 _data(s::Vector{UInt8}) = s
@@ -127,11 +128,11 @@ pointer(s::Str{<:Byte_CSEs}) = pointer(s.data)
 pointer(s::Str{<:Word_CSEs}) = reinterpret(Ptr{UInt16}, pointer(s.data))
 pointer(s::Str{<:Quad_CSEs}) = reinterpret(Ptr{UInt32}, pointer(s.data))
 
-const CHUNKSZ = sizeof(UInt64) # used for fast processing of strings
-const CHUNKMSK = (CHUNKSZ-1)%UInt64
+const CHUNKSZ = sizeof(UInt) # used for fast processing of strings
+const CHUNKMSK = (CHUNKSZ-1)%UInt
 
-_pnt64(s::Union{String,Vector{UInt8}}) = reinterpret(Ptr{UInt64}, pointer(s))
-_pnt64(s::Str) = reinterpret(Ptr{UInt64}, pointer(s.data))
+_pntchunk(s::Union{String,Vector{UInt8}}) = reinterpret(Ptr{UInt}, pointer(s))
+_pntchunk(s::Str) = reinterpret(Ptr{UInt}, pointer(s.data))
 
 """Length of string in codeunits"""
 ncodeunits(s::Str)              = sizeof(s)
@@ -139,7 +140,7 @@ ncodeunits(s::Str{<:Word_CSEs}) = sizeof(s) >>> 1
 ncodeunits(s::Str{<:Quad_CSEs}) = sizeof(s) >>> 2
 
 # For convenience
-@inline _calcpnt(str, siz) = (pnt = _pnt64(str) - CHUNKSZ;  (pnt, pnt + siz))
+@inline _calcpnt(str, siz) = (pnt = _pntchunk(str) - CHUNKSZ;  (pnt, pnt + siz))
 
 @inline _mask_bytes(n) = ((1%UInt) << ((n & CHUNKMSK) << 3)) - 0x1
 
