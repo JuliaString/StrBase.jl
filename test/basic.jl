@@ -966,6 +966,7 @@ end
     end
 end
 
+
 @testset "CESU-8 sequences" begin
     ## UTF-8 tests
 
@@ -974,7 +975,9 @@ end
         for hichar = 0xd800:0xdbff, lochar = 0xdc00:0xdfff
             seq = string(Char(hichar), Char(lochar))
             # Normal conversion throws an error
-            @test_throws StringError utf8(seq)
+            if sizeof(Int) != 4 # Avoid horrible 1000x performance issue on 32-bit platforms
+                @test_throws StringError utf8(seq)
+            end
             # Unsafe conversions return invalid strings as Text*Str
             @test typeof(unsafe_str(seq)) == Text1Str
             # With accept_surrogates flag, return converted to valid string (_UTF32Str)
@@ -984,6 +987,7 @@ end
     end
 
 end
+
 
 @testset "Reverse of UTF8" begin
     # Reverse of UTF8Str
