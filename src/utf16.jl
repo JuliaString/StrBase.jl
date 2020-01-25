@@ -1,18 +1,18 @@
 #=
 UTF16Str and UCS2Str types (UTF-16 encoding and pure BMP UCS-2)
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones,
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones,
 and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based in (small) part on code for UTF16String that used to be in Julia
 =#
 
-const _trail_mask = 0xdc00_dc00_dc00_dc00
-const _hi_bit_16  = 0x8000_8000_8000_8000
+const _trail_mask = CHUNKSZ == 4 ? 0xdc00_dc00 : 0xdc00_dc00_dc00_dc00
+const _hi_bit_16  = CHUNKSZ == 4 ? 0x8000_8000 : 0x8000_8000_8000_8000
 
 @inline _mask_surr(v)  = xor((v | v<<1 | v<<2 | v<<3 | v<<4 | v<<5) & _hi_bit_16, _hi_bit_16)
-@inline _get_masked(v::UInt64) = _mask_surr(xor(v, _trail_mask))
-@inline _get_masked(qpnt::Ptr{UInt64}) = _get_masked(unsafe_load(qpnt))
+@inline _get_masked(v::UInt) = _mask_surr(xor(v, _trail_mask))
+@inline _get_masked(qpnt::Ptr{UInt}) = _get_masked(unsafe_load(qpnt))
 @inline _get_lead(qpnt) = xor(_get_masked(qpnt), _hi_bit_16)
 
 @inline function _align_len_utf16(pnt, cnt, v)
@@ -26,11 +26,11 @@ const _hi_bit_16  = 0x8000_8000_8000_8000
 end
 
 _length_al(::MultiCU, ::Type{UTF16CSE}, beg::Ptr{UInt16}, cnt::Int) =
-    (pnt = reinterpret(Ptr{UInt64}, beg); _align_len_utf16(pnt, cnt<<1, _get_lead(pnt)))
+    (pnt = reinterpret(Ptr{UInt}, beg); _align_len_utf16(pnt, cnt<<1, _get_lead(pnt)))
 
 function _length(::MultiCU, ::Type{UTF16CSE}, beg::Ptr{UInt16}, cnt::Int)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
     v = _get_lead(pnt)
     if (align &= CHUNKMSK) != 0
         msk = _mask_bytes(align)
@@ -83,7 +83,7 @@ function is_bmp(str::MS_UTF16)
     (siz = sizeof(str)) == 0 && return true
     # Todo: handle unaligned for ARM32
     @preserve str begin
-        siz < CHUNKSZ && return (_get_masked(_pnt64(str)) & _mask_bytes(siz)) == 0
+        siz < CHUNKSZ && return (_get_masked(_pntchunk(str)) & _mask_bytes(siz)) == 0
 
         pnt, fin = _calcpnt(str, siz)
         while (pnt += CHUNKSZ) <= fin
@@ -106,7 +106,7 @@ end
 
 @inline function _check_bmp_utf16_ul(beg, cnt)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
     v = unsafe_load(pnt)
     if (align &= CHUNKMSK) != 0
         v &= ~_mask_bytes(align)
@@ -117,7 +117,7 @@ end
 
 is_bmp(str::Str{UTF16CSE}) =
     (cnt = sizeof(str)) == 0 ? true :
-    @preserve str _check_bmp_utf16_al(reinterpret(Ptr{UInt64}, pointer(str)), cnt)
+    @preserve str _check_bmp_utf16_al(reinterpret(Ptr{UInt}, pointer(str)), cnt)
 
 is_bmp(str::SubString{<:Str{UTF16CSE}}) =
     (cnt = sizeof(str)) == 0 ? true : @preserve str _check_bmp_utf16_ul(pointer(str), cnt)
@@ -316,8 +316,8 @@ function is_valid(::Type{<:Str{UTF16CSE}}, data::AbstractArray{UInt16})
     @inbounds return pos > len || !is_surrogate_codeunit(get_codeunit(data[pos + 1]))
 end
 
-# This can be sped up, to check 4 words at a time, only checking for unpaired
-# or out of order surrogates when one is found in the UInt64
+# This can be sped up, to check 2/4 words at a time, only checking for unpaired
+# or out of order surrogates when one is found in the UInt
 function is_valid(::Type{<:Str{UTF16CSE}}, pnt::Ptr{UInt16}, len)
     len == 0 && return true
     fin = bytoff(pnt, len - 1)

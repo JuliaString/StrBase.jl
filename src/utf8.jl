@@ -89,7 +89,7 @@ xor 80 then << 1 then |
 11 -> 01 -> 1
 =#
 
-const hi_mask = 0x8080_8080_8080_8080
+const hi_mask = CHUNKSZ == 4 ? 0x8080_8080 : 0x8080_8080_8080_8080
 
 @inline _count_cont(v) = (v = xor(v, hi_mask); count_ones(xor(((v << 1) | v), hi_mask) & hi_mask))
 @inline msk_lead(v) = (v = xor(v, hi_mask); xor(xor(((v << 1) | v), hi_mask) & hi_mask, hi_mask))
@@ -106,11 +106,11 @@ const hi_mask = 0x8080_8080_8080_8080
 end
 
 _length_al(::MultiCU, ::Type{UTF8CSE}, beg::Ptr{UInt8}, cnt::Int) =
-    (pnt = reinterpret(Ptr{UInt64}, beg); _align_len_utf8(pnt, cnt, unsafe_load(pnt)))
+    (pnt = reinterpret(Ptr{UInt}, beg); _align_len_utf8(pnt, cnt, unsafe_load(pnt)))
 
 function _length(::MultiCU, ::Type{UTF8CSE}, beg::Ptr{UInt8}, cnt::Int)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
     v = unsafe_load(pnt)
     if (align &= CHUNKMSK) != 0
         msk = _mask_bytes(align)
@@ -132,7 +132,7 @@ end
 
 @inline function _check_mask_ul(beg, cnt, msk)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
     v = unsafe_load(pnt)
     if (align &= CHUNKMSK) != 0
         v &= ~_mask_bytes(align)
@@ -162,7 +162,7 @@ is_ascii(vec::Vector{T}) where {T<:CodeUnitTypes} =
 is_ascii(str::Str{C}) where {C<:Union{UTF8_CSEs,LatinCSE,Binary_CSEs,UTF16CSE,UCS2CSE,
                                       Text2CSE,Text4CSE,UTF32CSE}} =
     (cnt = sizeof(str)) == 0 ? true :
-    @preserve str _check_mask_al(reinterpret(Ptr{UInt64}, pointer(str)), cnt,
+    @preserve str _check_mask_al(reinterpret(Ptr{UInt}, pointer(str)), cnt,
                                  _ascii_mask(codeunit(C)))
 
 # Todo! Here you need to see that 0b11yyyyxx at least 1 y must be set,
@@ -181,7 +181,7 @@ end
 
 @inline function _check_latin_utf8_ul(beg, cnt)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
     v = unsafe_load(pnt)
     if (align &= CHUNKMSK) != 0
         v &= ~_mask_bytes(align)
@@ -192,7 +192,7 @@ end
 
 is_latin(str::Str{UTF8CSE}) =
     (siz = sizeof(str)) == 0 ? true :
-    @preserve str _check_latin_utf8_al(reinterpret(Ptr{UInt64}, pointer(str)), siz)
+    @preserve str _check_latin_utf8_al(reinterpret(Ptr{UInt}, pointer(str)), siz)
 
 is_latin(str::SubString{<:Str{UTF8CSE}}) =
     (cnt = sizeof(str)) == 0 ? true : @preserve str _check_latin_utf8_ul(pointer(str), cnt)
@@ -224,7 +224,7 @@ end
 
 @inline function _check_bmp_utf8_ul(beg, cnt)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt64}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
     v = unsafe_load(pnt)
     if (align &= CHUNKMSK) != 0
         v &= ~_mask_bytes(align)
@@ -235,7 +235,7 @@ end
 
 is_bmp(str::Str{UTF8CSE}) =
     (cnt = sizeof(str)) == 0 ? true :
-    @preserve str _check_bmp_utf8_al(reinterpret(Ptr{UInt64}, pointer(str)), cnt)
+    @preserve str _check_bmp_utf8_al(reinterpret(Ptr{UInt}, pointer(str)), cnt)
 
 is_bmp(str::SubString{<:Str{UTF8CSE}}) =
     (cnt = sizeof(str)) == 0 ? true : @preserve str _check_bmp_utf8_ul(pointer(str), cnt)
