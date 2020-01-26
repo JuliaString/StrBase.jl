@@ -33,18 +33,18 @@ end
 _memhash(siz, ptr, seed) =
     ccall(Base.memhash, UInt, (Ptr{UInt8}, Csize_t, UInt32), ptr, siz, seed % UInt32)
 
-# Optimized code for hashing empty string
-_hash(seed)          = last(mmhash128_a(seed%UInt32)) + seed
-# Optimized for hashing a UTF-8 compatible aligned string
-_hash(str, seed)     = last(mmhash128(str, seed%UInt32)) + seed
-# For hashing generic abstract strings as if UTF-8 encoded
 @static if sizeof(Int) == 8
+    # Optimized code for hashing empty string
+    _hash(seed)          = last(mmhash128_a(seed%UInt32)) + seed
+    # Optimized for hashing a UTF-8 compatible aligned string
+    _hash(str, seed)     = last(mmhash128(str, seed%UInt32)) + seed
+    # For hashing generic abstract strings as if UTF-8 encoded
     _hash_abs(str, seed) = last(mmhash128_c(str, seed%UInt32)) + seed
 else
-    function _hash_abs(str, seed)
-        s = string(str)
-        @preserve s last(mmhash128_a(sizeof(s), pointer(s), seed%UInt32)) + seed
-    end
+    _hash(seed)    = MurmurHash3.fmix(seed%UInt32) + seed
+    # Optimized for hashing a UTF-8 compatible aligned string
+    _hash(s, seed) =  @preserve s mmhash32(sizeof(s), pointer(s), seed%UInt32) + seed
+    _hash_abs(s, seed) = _hash(string(s), seed)
 end
 
 hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str} =
