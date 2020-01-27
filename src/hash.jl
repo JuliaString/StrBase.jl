@@ -15,7 +15,7 @@ mmhash128(str::Union{String, Str}, seed::UInt32) =
 is_aligned(pnt::Ptr) = (reinterpret(UInt, pnt) & (sizeof(UInt) - 1)%UInt) == 0
 
 # Check alignment of substrings first
-function mmhash128(str::SubString, seed::UInt32)
+function mmhash128(str::SubString{S}, seed::UInt32) where {S<:Union{String, Str}}
     @preserve str begin
         pnt = pointer(str)
         if is_aligned(pnt)
@@ -44,7 +44,7 @@ else
     _hash(seed)    = MurmurHash3.fmix(seed%UInt32) + seed
     # Optimized for hashing a UTF-8 compatible aligned string
     _hash(s, seed) =  @preserve s mmhash32(sizeof(s), pointer(s), seed%UInt32) + seed
-    _hash_abs(s, seed) = _hash(string(s), seed)
+    _hash_abs(s, seed) = _hash(convert(String, s), seed)
 end
 
 hash(str::Union{S,SubString{S}}, seed::UInt) where {S<:Str} =
