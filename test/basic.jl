@@ -937,8 +937,12 @@ end
     @test String(sym) == string(Char(0xdcdb))
     @test Meta.lower(Main, sym) === sym
     res = string(Meta.parse(string(Char(0xdcdb)," = 1"),1,raise=false)[1])
-    @test startswith(res, "\$(Expr(:error, \"invalid character \\\"\\udcdb\\\"")
-    @test endswith(res,   "\"))")
+    @static if VERSION ≥ v"1.5.0-DEV.460"
+        @test res == "\$(Expr(:error, \"invalid UTF-8 sequence\"))"
+    else
+        @test startswith(res, "\$(Expr(:error, \"invalid character \\\"\\udcdb\\\"")
+        @test endswith(res,   "\"))")
+    end
 end
 
 @testset "invalid code point" begin
