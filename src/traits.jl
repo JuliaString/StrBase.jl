@@ -4,7 +4,7 @@
 ValidatedStyle(::Type{<:AbstractString}) = UnknownValidity()
 ValidatedStyle(::Type{<:Str}) = AlwaysValid()
 
-ValidatedStyle(A::T) where {T<:Union{AbsChar,AbstractString}} = ValidatedStyle(T)
+ValidatedStyle(A::T) where {T<:Union{AbstractChar,AbstractString}} = ValidatedStyle(T)
 
 CharSetStyle(::Type{<:Str{C}}) where {C<:CSE} = CharSetStyle(C)
 

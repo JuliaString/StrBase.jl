@@ -1,11 +1,11 @@
 #=
 Search functions for Str strings
 
-Copyright 2018 Gandalf Software, Inc., Scott P. Jones, and other contributors to the Julia language
+Copyright 2018-2020 Gandalf Software, Inc., Scott P. Jones,
+and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based in part on julia/base/strings/search.jl
 =#
-
 """
     find(Fwd, pattern, string::AbstractString, start::Integer)
 
@@ -153,10 +153,10 @@ find(pat::Function, ::Type{D}, str::AbstractString) where {D<:FindOp} = find(D, 
 find(pat::Function, ::Type{D}, str::AbstractString, pos) where {D<:FindOp} = find(D, pat, str, pos)
 
 find(::Type{D}, pred::P, str::AbstractString,
-    pos::Integer) where {P<:Fix2{Union{typeof(==),typeof(isequal)}, <:AbsChar}, D<:Direction} =
+    pos::Integer) where {P<:Fix2{Union{typeof(==),typeof(isequal)}, <:AbstractChar}, D<:Direction} =
     find(D, pred.x, str, pos)
 
-function find(::Type{D}, ch::AbsChar, str::AbstractString, pos::Integer) where {D<:Direction}
+function find(::Type{D}, ch::AbstractChar, str::AbstractString, pos::Integer) where {D<:Direction}
     pos < Int(D===Fwd) && (@boundscheck boundserr(str, pos); return 0)
     if pos > (len = ncodeunits(str))
         @boundscheck pos > len+1 && boundserr(str, pos)
@@ -171,7 +171,7 @@ end
 _get_dir(::Type{First}) = Fwd()
 _get_dir(::Type{Last})  = Rev()
 
-find(::Type{D}, ch::AbsChar, str::AbstractString) where {D<:Union{First,Last}} =
+find(::Type{D}, ch::AbstractChar, str::AbstractString) where {D<:Union{First,Last}} =
     ((len = ncodeunits(str)) == 0 || !is_valid(eltype(str), ch) ? 0
      : _srch_cp(_get_dir(D), EncodingStyle(str), str, ch,
                 D === First ? 1 : lastindex(str), len))
@@ -270,9 +270,9 @@ end
 # _srch_cp is only called with values that are valid for that string type,
 # and checking as already been done on the position (pos)
 # These definitions only work for SingleCU types
-_srch_cp(::Fwd, ::SingleCU, str::T, cp::AbsChar, pos, len) where {T<:Str} =
+_srch_cp(::Fwd, ::SingleCU, str::T, cp::AbstractChar, pos, len) where {T<:Str} =
     @preserve str _srch_codeunit(Fwd(), pointer(str), cp%codeunit(T), pos, len)
-_srch_cp(::Rev, ::SingleCU, str::T, cp::AbsChar, pos, len) where {T<:Str} =
+_srch_cp(::Rev, ::SingleCU, str::T, cp::AbstractChar, pos, len) where {T<:Str} =
     @preserve str _srch_codeunit(Rev(), pointer(str), cp%codeunit(T), pos)
 
 function _srch_cp(::Fwd, cus, str, cp, pos, len)
@@ -423,7 +423,7 @@ occurs_in(needle::Char, hay::Str)           = _occurs_in(needle, hay)
 occurs_in(needle::Str, hay::Str)            = _occurs_in(needle, hay)
 
 in(chr::Chr, str::AbstractString) = _occurs_in(chr, str)
-in(chr::AbsChar,   str::Str)      = _occurs_in(chr, str)
+in(chr::AbstractChar, str::Str)   = _occurs_in(chr, str)
 in(pat::Str, str::AbstractString) = _occurs_in(pat, str)
 in(pat::AbstractString, str::Str) = _occurs_in(pat, str)
 in(pat::Str, str::Str)            = _occurs_in(pat, str)

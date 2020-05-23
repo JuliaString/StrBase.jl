@@ -1,11 +1,11 @@
 #=
 Optimized search functions for UTF16Str
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
 
-function _srch_cp(::Fwd, ::MultiCU, str::Str{UTF16CSE}, cp::AbsChar, pos, len)
+function _srch_cp(::Fwd, ::MultiCU, str::Str{UTF16CSE}, cp::AbstractChar, pos, len)
     @preserve str begin
         beg = pointer(str)
         (ch = codepoint(cp)) <= 0x0ffff && return _srch_codeunit(Fwd(), beg, ch%UInt16, pos, len)
@@ -24,7 +24,7 @@ function _srch_cp(::Fwd, ::MultiCU, str::Str{UTF16CSE}, cp::AbsChar, pos, len)
     end
 end
 
-function _srch_cp(::Rev, ::MultiCU, str::Str{UTF16CSE}, cp::AbsChar, pos, len)
+function _srch_cp(::Rev, ::MultiCU, str::Str{UTF16CSE}, cp::AbstractChar, pos, len)
     @preserve str begin
         beg = pointer(str)
         (ch = codepoint(cp)) <= 0x0ffff && _srch_codeunit(Rev(), beg, ch%UInt16, pos)
