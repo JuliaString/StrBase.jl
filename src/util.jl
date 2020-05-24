@@ -1,7 +1,8 @@
 #=
 Utility functions for Str strings
 
-Copyright 2018 Gandalf Software, Inc., Scott P. Jones, and other contributors to the Julia language
+Copyright 2018-2020 Gandalf Software, Inc., Scott P. Jones,
+and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based initially on julia/test/strings/util.jl
 =#
@@ -43,7 +44,7 @@ lpad(str::MaybeSub{<:Str}, cnt::Integer, pad::AbstractString) =
     (cnt -= length(str)) <= 0 ? str : _lpad(cnt, pad, str)
 lpad(ch::Chr, cnt::Integer, pad::AbstractString) =
     (cnt -= 1) <= 0 ? string(ch) : _lpad(cnt, pad, ch)
-lpad(str::MaybeSub{<:Str}, cnt::Integer, pad::AbsChar=' ') =
+lpad(str::MaybeSub{<:Str}, cnt::Integer, pad::AbstractChar=' ') =
     (cnt -= length(str)) <= 0 ? str : string(pad^cnt, str)
 lpad(ch::Chr, cnt::Integer, pad::AbstractChar=' ') =
     (cnt -= 1) <= 0 ? string(ch) : string(pad^cnt, ch)
@@ -56,12 +57,13 @@ rpad(str::MaybeSub{<:Str}, cnt::Integer, pad::AbstractString) =
     (cnt -= length(str)) <= 0 ? str : _rpad(cnt, pad, str)
 rpad(ch::Chr, cnt::Integer, pad::AbstractString) =
     (cnt -= 1) <= 0 ? string(ch) : _rpad(cnt, pad, ch)
-rpad(str::MaybeSub{<:Str}, cnt::Integer, pad::AbsChar=' ') =
+rpad(str::MaybeSub{<:Str}, cnt::Integer, pad::AbstractChar=' ') =
     (cnt -= length(str)) <= 0 ? str : string(str, pad^cnt)
-rpad(ch::Chr, cnt::Integer, pad::AbsChar=' ') =
+rpad(ch::Chr, cnt::Integer, pad::AbstractChar=' ') =
     (cnt -= 1) <= 0 ? string(ch) : string(ch, pad^cnt)
 
-const SetOfChars = Union{Tuple{Vararg{<:AbsChar}},AbstractVector{<:AbsChar},Set{<:AbsChar}}
+const SetOfChars =
+    Union{Tuple{Vararg{<:AbstractChar}},AbstractVector{<:AbstractChar},Set{<:AbstractChar}}
 
 function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     pos = 1

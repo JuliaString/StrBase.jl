@@ -1,10 +1,10 @@
 #=
 Optimized search functions for UTFStr (UTF-8 encoding)
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
-function _srch_cp(::Fwd, ::MultiCU, str::Str{UTF8CSE}, cp::AbsChar, pos, len)
+function _srch_cp(::Fwd, ::MultiCU, str::Str{UTF8CSE}, cp::AbstractChar, pos, len)
     @preserve str begin
         (ch = codepoint(cp)) < 0x80 &&
             return _srch_codeunit(Fwd(), pointer(str), ch%UInt8, pos, len)
@@ -33,7 +33,7 @@ function _srch_cp(::Fwd, ::MultiCU, str::Str{UTF8CSE}, cp::AbsChar, pos, len)
     end
 end
 
-function _srch_cp(::Rev, ::MultiCU, str::Str{UTF8CSE}, cp::AbsChar, pos, len)
+function _srch_cp(::Rev, ::MultiCU, str::Str{UTF8CSE}, cp::AbstractChar, pos, len)
     @preserve str begin
         (ch = codepoint(cp)) < 0x80 && return _srch_codeunit(Rev(), pointer(str), ch%UInt8, pos)
         init = beg = pointer(str)
