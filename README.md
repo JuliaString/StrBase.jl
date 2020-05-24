@@ -2,8 +2,8 @@
 
 | **Info** | **Windows** | **Linux & MacOS** | **Package Evaluator** | **CodeCov** | **Coveralls** |
 |:------------------:|:------------------:|:---------------------:|:-----------------:|:---------------------:|:-----------------:|
-| [![][license-img]][license-url] | [![][app-s-img]][app-s-url] | [![][travis-s-img]][travis-url] | [![][pkg-s-img]][pkg-s-url] | [![][codecov-img]][codecov-url] | [![][coverall-s-img]][coverall-s-url]
-| [![][gitter-img]][gitter-url] | [![][app-m-img]][app-m-url] | [![][travis-m-img]][travis-url] | [![][pkg-m-img]][pkg-m-url] | [![][codecov-img]][codecov-url] | [![][coverall-m-img]][coverall-m-url]
+| [![][license-img]][license-url] | [![][app-s-img]][app-s-url] | [![][travis-s-img]][travis-url] | [![][pkgeval-img]][pkgeval-url] | [![][codecov-img]][codecov-url] | [![][coverall-s-img]][coverall-s-url]
+| [![][gitter-img]][gitter-url] | [![][app-m-img]][app-m-url] | [![][travis-m-img]][travis-url] | [![][pkgeval-img]][pkgeval-url] | [![][codecov-img]][codecov-url] | [![][coverall-m-img]][coverall-m-url]
 
 [license-img]:  http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 [license-url]:  LICENSE.md
@@ -20,10 +20,8 @@
 [app-s-img]:    https://ci.appveyor.com/api/projects/status/2v12uwlr0ueale6n?svg=true
 [app-m-img]:    https://ci.appveyor.com/api/projects/status/2v12uwlr0ueale6n/branch/master?svg=true
 
-[pkg-s-url]:    http://pkg.julialang.org/detail/StrBase
-[pkg-m-url]:    http://pkg.julialang.org/detail/StrBase
-[pkg-s-img]:    http://pkg.julialang.org/badges/StrBase_0.6.svg
-[pkg-m-img]:    http://pkg.julialang.org/badges/StrBase_0.7.svg
+[pkgeval-img]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/StrBase.svg
+[pkgeval-url]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html
 
 [codecov-url]:  https://codecov.io/gh/JuliaString/StrBase.jl
 [codecov-img]:  https://codecov.io/gh/JuliaString/StrBase.jl/branch/master/graph/badge.svg
