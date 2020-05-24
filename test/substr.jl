@@ -224,7 +224,7 @@ function teststr(T)
     # search and SubString (issue #5679)
     let str = T("Hello, world!"),
         u = SubString(str, 1, 5)
-        @test fnd(Last, T("World"), u) == 0:-1
+        @test fnd(Last, T("World"), u) === 0:-1
         @test fnd(Last, ==('z'), u) == 0
         @test fnd(Last, T("ll"), u) == 3:4
     end

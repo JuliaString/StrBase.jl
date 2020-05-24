@@ -13,42 +13,42 @@ const u8map = [1, 4, 5, 7, 8, 9, 10, 11, 12, 13, 16, 17, 19, 20, 21, 22, 23, 24,
 function test2(dir, P, str, list)
     for (p, res) in list
         pat = P(p)
-        (r = fnd(dir, pat, str)) == res ||
+        (r = fnd(dir, pat, str)) === res ||
             println("fnd($dir, $(typeof(pat)):\"$pat\", $(typeof(str)):\"$str\") => $r != $res")
-        @test fnd(dir, pat, str) == res
+        @test fnd(dir, pat, str) === res
     end
 end
 
 function test3(dir, P, str, list)
     for (p, beg, res) in list
         pat = P(p)
-        (r = fnd(dir, pat, str, beg)) == res ||
+        (r = fnd(dir, pat, str, beg)) === res ||
             println("fnd($dir, $(typeof(pat)):\"$pat\", $(typeof(str)):\"$str\", $beg) => $r != $res")
-        @test fnd(dir, pat, str, beg) == res
+        @test fnd(dir, pat, str, beg) === res
     end
 end
 
 function test2ch(dir, C, str, list)
     for (p, res) in list
         pat = cvtchar(C, p)
-        (r = fnd(dir, pat, str)) == res ||
+        (r = fnd(dir, pat, str)) === res ||
             println("fnd($dir, $(typeof(p)):\"$pat\"), $(typeof(str)):\"$str\") => $r != $res")
-        (r = fnd(dir, ==(pat), str)) == res ||
+        (r = fnd(dir, ==(pat), str)) === res ||
             println("fnd($dir, ==($(typeof(pat)):\"$pat\"), $(typeof(str)):\"$str\") => $r != $res")
-        @test fnd(dir, pat, str) == res
-        @test fnd(dir, ==(pat), str) == res
+        @test fnd(dir, pat, str) === res
+        @test fnd(dir, ==(pat), str) === res
     end
 end
 
 function test3ch(dir, C, str, list)
     for (p, beg, res) in list
         pat = cvtchar(C, p)
-        (r = fnd(dir, pat, str, beg)) == res ||
+        (r = fnd(dir, pat, str, beg)) === res ||
             println("fnd($dir, $(typeof(pat)):'$pat', $(typeof(str)):\"$str\", $beg) => $r != $res")
-        (r = fnd(dir, ==(pat), str, beg)) == res ||
+        (r = fnd(dir, ==(pat), str, beg)) === res ||
             println("fnd($dir, ==($(typeof(pat)):'$pat'), $(typeof(str)):\"$str\", $beg) => $r != $res")
-        @test fnd(dir, pat, str, beg) == res
-        @test fnd(dir, ==(pat), str, beg) == res
+        @test fnd(dir, pat, str, beg) === res
+        @test fnd(dir, ==(pat), str, beg) === res
     end
 end
 
@@ -147,14 +147,14 @@ end
             @testset "find empty string,..." begin
                 i = 1
                 while i <= ncodeunits(str)
-                    @test fnd(Fwd, emptyP, str, i) == i:i-1
-                    @test fnd(Rev, emptyP, str, i) == i:i-1
+                    @test fnd(Fwd, emptyP, str, i) === i:i-1
+                    @test fnd(Rev, emptyP, str, i) === i:i-1
                     i = nextind(str, i)
                 end
             end
 
-            @test fnd(First, emptyP, emptyT) == 1:0
-            @test fnd(Last, emptyP, emptyT) == 1:0
+            @test fnd(First, emptyP, emptyT) === 1:0
+            @test fnd(Last, emptyP, emptyT) === 1:0
         end
     end
 end
@@ -232,8 +232,8 @@ end
             @testset "find empty string,..." begin
                 i = 1
                 while i <= ncodeunits(str)
-                    @test fnd(Fwd, empty, str, i) == i:i-1
-                    @test fnd(Rev, empty, str, i) == i:i-1
+                    @test fnd(Fwd, empty, str, i) === i:i-1
+                    @test fnd(Rev, empty, str, i) === i:i-1
                     i = nextind(str, i)
                 end
             end

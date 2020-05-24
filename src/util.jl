@@ -67,7 +67,7 @@ function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     pos = 1
     lst = lastindex(str)
     res = find(First, splitter, str)
-    if res != 0:-1
+    if res !== 0:-1
         j, k = first(res), nextind(str, last(res))
         while 0 < j <= lst && length(strs) != limit - 1
             if pos < k
@@ -77,7 +77,7 @@ function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
             end
             (k <= j) && (k = nextind(str, j))
             res = find(Fwd, splitter, str, k)
-            res == 0:-1 && break
+            res === 0:-1 && break
             j, k = first(res), nextind(str, last(res))
         end
     end
