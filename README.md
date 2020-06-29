@@ -1,9 +1,12 @@
 # StrBase
 
-| **Info** | **Windows** | **Linux & MacOS** | **Package Evaluator** | **CodeCov** | **Coveralls** |
-|:------------------:|:------------------:|:---------------------:|:-----------------:|:---------------------:|:-----------------:|
-| [![][license-img]][license-url] | [![][app-s-img]][app-s-url] | [![][travis-s-img]][travis-url] | [![][pkgeval-img]][pkgeval-url] | [![][codecov-img]][codecov-url] | [![][coverall-s-img]][coverall-s-url]
-| [![][gitter-img]][gitter-url] | [![][app-m-img]][app-m-url] | [![][travis-m-img]][travis-url] | [![][pkgeval-img]][pkgeval-url] | [![][codecov-img]][codecov-url] | [![][coverall-m-img]][coverall-m-url]
+[pkg-url]: https://github.com/JuliaString/StrBase.jl.git
+
+[julia-url]:    https://github.com/JuliaLang/Julia
+[julia-release]:https://img.shields.io/github/release/JuliaLang/julia.svg
+
+[release]:      https://img.shields.io/github/release/JuliaString/StrBase.jl.svg
+[release-date]: https://img.shields.io/github/release-date/JuliaString/StrBase.jl.svg
 
 [license-img]:  http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 [license-url]:  LICENSE.md
@@ -15,21 +18,17 @@
 [travis-s-img]: https://travis-ci.org/JuliaString/StrBase.jl.svg
 [travis-m-img]: https://travis-ci.org/JuliaString/StrBase.jl.svg?branch=master
 
-[app-s-url]:    https://ci.appveyor.com/project/ScottPJones/strbase-jl
-[app-m-url]:    https://ci.appveyor.com/project/ScottPJones/strbase-jl/branch/master
-[app-s-img]:    https://ci.appveyor.com/api/projects/status/2v12uwlr0ueale6n?svg=true
-[app-m-img]:    https://ci.appveyor.com/api/projects/status/2v12uwlr0ueale6n/branch/master?svg=true
-
-[pkgeval-img]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/StrBase.svg
-[pkgeval-url]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html
-
 [codecov-url]:  https://codecov.io/gh/JuliaString/StrBase.jl
 [codecov-img]:  https://codecov.io/gh/JuliaString/StrBase.jl/branch/master/graph/badge.svg
 
-[coverall-s-url]: https://coveralls.io/github/JuliaString/StrBase.jl
-[coverall-m-url]: https://coveralls.io/github/JuliaString/StrBase.jl?branch=master
-[coverall-s-img]: https://coveralls.io/repos/github/JuliaString/StrBase.jl/badge.svg
-[coverall-m-img]: https://coveralls.io/repos/github/JuliaString/StrBase.jl/badge.svg?branch=master
+[contrib]:    https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat
+
+[![][release]][pkg-url] [![][release-date]][pkg-url] [![][license-img]][license-url] [![contributions welcome][contrib]](https://github.com/JuliaString/StrBase.jl/issues)
+
+| **Julia Version** | **Unit Tests** | **Coverage** |
+|:------------------:|:------------------:|:---------------------:|
+| [![][julia-release]][julia-url] | [![][travis-s-img]][travis-url] | [![][codecov-img]][codecov-url]
+| Julia Latest | [![][travis-m-img]][travis-url] | [![][codecov-img]][codecov-url]
 
 See the documentation in the [Strs](https://github.com/JuliaString/Strs.jl) package,
 this package contains the basic functionality, which can be used by other string related packages.
