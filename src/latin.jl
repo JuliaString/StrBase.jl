@@ -167,7 +167,7 @@ end
 
 function convert(::Type{<:Str{C}}, vec::Vector{CU}) where {C<:Latin_CSEs,CU<:CodeUnitTypes}
     # handle zero length string quickly
-    (len = length(vec)) == 0 && return _empty_str(C)
+    (len = length(vec)) == 0 && return empty_str(C)
     @preserve vec begin
         pnt = pointer(vec)
         # get number of bytes to allocate

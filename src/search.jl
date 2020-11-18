@@ -121,6 +121,10 @@ found(::Type{<:AbstractString}, v) = v != 0
 find_result(::Type{<:AbstractString}, v) = v
 
 nothing_sentinel(i) = first(i) == 0 ? nothing : i
+Base.findfirst(a::AbstractChar, b::Str)   = nothing_sentinel(find(First, a, b))
+Base.findlast(a::AbstractChar, b::Str)    = nothing_sentinel(find(Last, a, b))
+Base.findnext(a::AbstractChar, b::Str, i) = nothing_sentinel(find(Fwd, a, b, i))
+Base.findprev(a::AbstractChar, b::Str, i) = nothing_sentinel(find(Rev, a, b, i))
 Base.findfirst(a, b::Str)   = nothing_sentinel(find(First, a, b))
 Base.findlast(a, b::Str)    = nothing_sentinel(find(Last, a, b))
 Base.findnext(a, b::Str, i) = nothing_sentinel(find(Fwd, a, b, i))
