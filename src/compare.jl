@@ -54,7 +54,7 @@ end
     while pnt < fin
         str_done(b, pos) && return 1
         c1, pnt = _nextcp(C, pnt)
-        ch, pos = str_next(b, pos)
+        ch, pos = iterate(b, pos)
         c2 = ch%UInt32
         c1 == c2 || return ifelse(c1 < c2, -1, 1)
     end
@@ -93,7 +93,7 @@ function _cpeq(a::MaybeSub{T}, b) where {C<:CSE, T<:Str{C}}
     while pnt < fin
         str_done(b, pos) && return false
         c1, pnt = _nextcp(C, pnt)
-        ch, pos = str_next(b, pos)
+        ch, pos = iterate(b, pos)
         c1 == codepoint(ch) || return false
     end
     true

@@ -145,7 +145,7 @@ ncodeunits(s::Str{<:Quad_CSEs}) = sizeof(s) >>> 2
 @inline _big_mask_bytes(n) = ((1%BigChunk) << ((n & BIGCHUNKMSK) << 3)) - 0x1
 
 @inline function _mask_bytes(v::T, cnt) where {T}
-    shft = (cnt & (sizeof(T) - 1))%UInt << 3
+    shft = ((cnt & (sizeof(T) - 1))%UInt) << 3
     ifelse(shft == 0, v, v & ~(typemax(T) << shft))
 end
 

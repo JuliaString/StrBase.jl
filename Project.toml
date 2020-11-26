@@ -27,6 +27,6 @@ test = ["Test", "Random"]
 julia = "1"
 ModuleInterfaceTools = "1"
 MurmurHash3 = "^1.0.3"
-StrAPI = "1"
+StrAPI = "1.1"
 ChrBase = "^1.0.1"
 CharSetEncodings = "1"

@@ -209,11 +209,11 @@ const ASCII_Union = Union{UTF8CSE,LatinCSE,Binary_CSEs,UTF16CSE,UCS2CSE,Text2CSE
 
 is_ascii(str::SubString{<:Str{C}}) where {C<:ASCII_Union} =
     (cnt = sizeof(str)) == 0 ||
-        (@preserve str _check_block_ul(pointer(str), cnt, _ascii_mask(codeunit(C))))
+        (@preserve str _check_mask_ul(pointer(str), cnt, _ascii_mask(codeunit(C))))
 
 is_ascii(vec::Vector{T}) where {T<:CodeUnitTypes} =
     (cnt = sizeof(vec)) == 0 ||
-         (@preserve str _check_block_ul(pointer(vec), cnt, _ascii_mask(T)))
+         (@preserve str _check_mask_ul(pointer(vec), cnt, _ascii_mask(T)))
 
 is_ascii(str::Str{C}) where {C<:ASCII_Union} =
     (cnt = sizeof(str)) == 0 ||
@@ -225,10 +225,16 @@ _all_latin(val) =
     ((val & (val<<1) & (val<<2 | (val<<3) | (val<<4) | (val<<5))) & get_high_mask(val)) == 0
 
 @inline function _check_latin_utf8_al(beg, cnt)
-    pnt = reinterpret(Ptr{UInt}, beg)
-    fin = pnt + cnt
+    cnt <= CHUNKSZ && return _all_latin(_mask_bytes(unsafe_load(_pntchunk(ptr)), cnt))
+    bigmsk = _widen_mask(msk)
+    cnt <= BIGCHUNKSZ && return _all_latin(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    _all_latin(unsafe_load(_pntchunk(ptr))) || return false
+    cnt -= CHUNKSZ
+    cnt <= BIGCHUNKSZ && return  _all_latin(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    pnt = _pntbigchunk(ptr + CHUNKSZ)
     v = unsafe_load(pnt)
-    while (pnt += CHUNKSZ) < fin
+    fin = pnt + cnt
+    while (pnt += BIGCHUNKSZ) < fin
         _all_latin(v) || return false
         v = unsafe_load(pnt)
     end
@@ -273,10 +279,16 @@ is_latin(str::Str{C}) where {C<:Union{Word_CSEs,Quad_CSEs}} =
 _all_bmp(val) = ((val | (val<<1) | (val<<2) | (val<<3)) & get_high_mask(val)) == 0
 
 @inline function _check_bmp_utf8_al(beg, cnt)
-    pnt = reinterpret(Ptr{UInt}, beg)
-    fin = pnt + cnt
+    cnt <= CHUNKSZ && return _all_bmp(_mask_bytes(unsafe_load(_pntchunk(ptr)), cnt))
+    bigmsk = _widen_mask(msk)
+    cnt <= BIGCHUNKSZ && return _all_bmp(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    _all_bmp(unsafe_load(_pntchunk(ptr))) || return false
+    cnt -= CHUNKSZ
+    cnt <= BIGCHUNKSZ && return  _all_bmp(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    pnt = _pntbigchunk(ptr + CHUNKSZ)
+    fin = _pntbigchunk(ptr + CHUNKSZ + cnt)
     v = unsafe_load(pnt)
-    while (pnt += CHUNKSZ) < fin
+    while (pnt += BIGCHUNKSZ) < fin
         _all_bmp(v) || return false
         v = unsafe_load(pnt)
     end
@@ -452,9 +464,9 @@ _iterate(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) wher
 end
 
 _next(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
-    str_next(str.data, pos)
+    iterate(str.data, pos)
 _next(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) where {T} =
-    str_next(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
+    iterate(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
 
 ## overload methods for efficiency ##
 
