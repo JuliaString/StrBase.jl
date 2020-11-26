@@ -144,6 +144,13 @@ ncodeunits(s::Str{<:Quad_CSEs}) = sizeof(s) >>> 2
 
 @inline _big_mask_bytes(n) = ((1%BigChunk) << ((n & BIGCHUNKMSK) << 3)) - 0x1
 
+@inline function _mask_bytes(v::T, cnt) where {T}
+    shft = (cnt & (sizeof(T) - 1))%UInt << 3
+    ifelse(shft == 0, v, v & ~(typemax(T) << shft))
+end
+
+@inline _widen_mask(msk::UInt) = ((msk%BigChunk) << (8*sizeof(UInt))) | msk
+
 # Support for SubString of Str
 
 Base.SubString(str::Str{C}) where {C<:SubSet_CSEs} =

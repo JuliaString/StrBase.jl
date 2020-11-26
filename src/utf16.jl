@@ -22,7 +22,7 @@ const _hi_bit_16  = CHUNKSZ == 4 ? 0x8000_8000 : 0x8000_8000_8000_8000
         len += count_ones(v)
         v = _get_lead(pnt)
     end
-    len + count_ones((cnt & CHUNKMSK) == 0 ? v : (v & _mask_bytes(cnt)))
+    len + count_ones(_mask_bytes(v, cnt))
 end
 
 _length_al(::MultiCU, ::Type{UTF16CSE}, beg::Ptr{UInt16}, cnt::Int) =
@@ -100,7 +100,7 @@ end
         v == 0 || return false
         v = _get_masked(pnt)
     end
-    ((cnt & CHUNKMSK) == 0 ? v : (v & _mask_bytes(cnt))) == 0
+    _mask_bytes(v, cnt) == 0
 end
 @inline _check_bmp_utf16_al(pnt, cnt) = _check_bmp_utf16_al(pnt, cnt, unsafe_load(pnt))
 
@@ -116,11 +116,11 @@ end
 end
 
 is_bmp(str::Str{UTF16CSE}) =
-    (cnt = sizeof(str)) == 0 ? true :
+    (cnt = sizeof(str)) == 0 ||
     @preserve str _check_bmp_utf16_al(reinterpret(Ptr{UInt}, pointer(str)), cnt)
 
 is_bmp(str::SubString{<:Str{UTF16CSE}}) =
-    (cnt = sizeof(str)) == 0 ? true : @preserve str _check_bmp_utf16_ul(pointer(str), cnt)
+    (cnt = sizeof(str)) == 0 || @preserve str _check_bmp_utf16_ul(pointer(str), cnt)
 
 is_bmp(str::MaybeSub{<:Str{<:UCS2_CSEs}}) = true
 
