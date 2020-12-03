@@ -157,7 +157,7 @@ is_ascii(str::SubString{<:Str{C}}) where {C<:Union{UTF8CSE,LatinCSE,Binary_CSEs,
 
 is_ascii(vec::Vector{T}) where {T<:CodeUnitTypes} =
     (cnt = sizeof(vec)) == 0 ? true :
-    @preserve str _check_mask_ul(pointer(vec), cnt, _ascii_mask(T))
+    @preserve vec _check_mask_ul(pointer(vec), cnt, _ascii_mask(T))
 
 is_ascii(str::Str{C}) where {C<:Union{UTF8_CSEs,LatinCSE,Binary_CSEs,UTF16CSE,UCS2CSE,
                                       Text2CSE,Text4CSE,UTF32CSE}} =
