@@ -16,6 +16,11 @@ end
 
 string_types = keys(compat_types)
 
+legacy_types = Dict(ASCIIStr => to_ascii,
+                    UTF8Str => utf8,
+                    UTF16Str => utf16,
+                    UTF32Str => utf32)
+
 ##  create type specific test strings
 test_strings_base = Dict()
 for T in AllCharTypes
@@ -25,6 +30,14 @@ end
 @testset "constructors" begin
     for (ST, type_list) in compat_types, CT in type_list, str in test_strings_base[CT]
         @eval @test convert($ST, $str) == $str
+    end
+end
+
+@testset "legacy constructors" begin
+    for (ST, constructor) in legacy_types, str in test_strings_base[ASCIIChr]
+        vec = Vector{codeunit(ST)}(codeunits(str))
+        @eval @test $constructor($vec) == $str
+        @eval @test $constructor(pointer($vec), $(length(vec))) == $str
     end
 end
 
