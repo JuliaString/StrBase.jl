@@ -226,7 +226,6 @@ _all_latin(val) =
 
 @inline function _check_latin_utf8_al(beg, cnt)
     cnt <= CHUNKSZ && return _all_latin(_mask_bytes(unsafe_load(_pntchunk(ptr)), cnt))
-    bigmsk = _widen_mask(msk)
     cnt <= BIGCHUNKSZ && return _all_latin(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
     _all_latin(unsafe_load(_pntchunk(ptr))) || return false
     cnt -= CHUNKSZ
@@ -600,15 +599,6 @@ _prevind(::MultiCU, str::Str{RawUTF8CSE}, pos::Int, nchar::Int) =
     prevind(str.data, pos, nchar)
 _prevind(::MultiCU, str::Str{RawUTF8CSE}, pos::Int) =
     prevind(str.data, pos)
-
-#=
-const _ByteStr = Union{Str{ASCIICSE}, SubString{<:Str{ASCIICSE}},
-                       Str{UTF8CSE},  SubString{<:Str{UTF8CSE}}}
-
-string(s::_ByteStr) = s
-string(s::_ByteStr, c::_ByteStr...) = UTF8Str(_string(c))
-    # ^^ at least one must be UTF-8 or the ASCII-only method would get called
-=#
 
 function _reverse(::MultiCU, ::Type{UTF8CSE}, len, pnt::Ptr{T}) where {T<:CodeUnitTypes}
     buf, beg = _allocate(T, len)

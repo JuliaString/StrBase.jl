@@ -1,7 +1,8 @@
 #=
 LatinStr/_LatinStr type (ISO Latin1 8-bit subset of Unicode)
 
-Copyright 2017 Gandalf Software, Inc., Scott P. Jones, and other contributors to the Julia language
+Copyright 2017, 2020 Gandalf Software, Inc., Scott P. Jones,
+and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based in part on code for ASCIIString that used to be in Julia
 =#
@@ -12,23 +13,6 @@ is_ascii(str::MaybeSub{<:Str{<:_LatinCSE}}) = false
 is_latin(str::MaybeSub{<:Str{<:LatinCSE}}) = true
 is_bmp(str::MS_Latin) = true
 is_unicode(str::MS_Latin) = true
-
-const MS_ASCIILatin = MaybeSub{<:Str{<:Union{ASCIICSE, Latin_CSEs}}}
-
-function string(collection::MS_ASCIILatin...)
-    length(collection) == 1 && return collection[1]
-    len = 0
-    @inbounds for str in collection
-        len += ncodeunits(str)
-    end
-    buf, pnt = _allocate(len)
-    @inbounds for str in collection
-        len = ncodeunits(str)
-        _memcpy(pnt, pointer(str), len)
-        pnt += len
-    end
-    Str(LatinCSE, buf)
-end
 
 ## transcoding to Latin1 ##
 

@@ -11,39 +11,45 @@ const _trail_mask = CHUNKSZ == 4 ? 0xdc00_dc00 : 0xdc00_dc00_dc00_dc00
 const _hi_bit_16  = CHUNKSZ == 4 ? 0x8000_8000 : 0x8000_8000_8000_8000
 
 const _big_trail_mask = _widen_mask(_trail_mask)
-const _big_hi_bit_16  = _widen_mask(_big_hi_bit_16)
+const _big_hi_bit_16  = _widen_mask(_hi_bit_16)
 
 @inline _mask_surr(v, msk)  = xor((v | v<<1 | v<<2 | v<<3 | v<<4 | v<<5) & msk, msk)
 
-@inline _get_masked(v::UInt) = _mask_surr(xor(v, _trail_mask))
-@inline _get_masked(v::BigChunk) = _mask_surr(xor(v, _big_trail_mask))
+@inline _get_masked(v::UInt) = _mask_surr(xor(v, _trail_mask), _hi_bit_16)
+@inline _get_masked(v::BigChunk) = _mask_surr(xor(v, _big_trail_mask), _big_hi_bit_16)
 @inline _get_masked(qpnt::Ptr) = _get_masked(unsafe_load(qpnt))
 
 @inline _get_lead(qpnt::Ptr{UInt}) = xor(_get_masked(qpnt), _hi_bit_16)
 @inline _get_lead(qpnt::Ptr{BigChunk}) = xor(_get_masked(qpnt), _big_hi_bit_16)
 
-@inline function _length_al(::MultiCU, ::Type{UTF16CSE}, beg::Ptr{UInt16}, cnt::Int)
+## overload methods for efficiency ##
+
+function _length_utf16_al(beg::Ptr{UInt16}, cnt::Int)
+    len = count_ones(_get_lead(_pntchunk(beg)))
+    cnt -= CHUNKSZ
+    pnt = _pntbigchunk(beg + CHUNKSZ)
+    v = _get_lead(pnt)
+    if cnt > BIGCHUNKSZ
+        fin = pnt + cnt
+        while (pnt += BIGCHUNKSZ) < fin
+            len += count_ones(v)
+            v = _get_lead(pnt)
+        end
+    end
+    len + count_ones(_mask_bytes(v, cnt))
+end
+
+function _length_al(::MultiCU, ::Type{UTF16CSE}, beg::Ptr{UInt16}, cnt::Int)
     # First check very frequent cases of short strings
     # (on 64-bit machines, 1-8 bytes, 9-16 bytes, and 17-24)
     # taking advantage of the knowledge of how String types are stored in Julia,
     # i.e. UInt length, immediate followed by the string data, aligned on sizeof(UInt)*2
     cnt <<= 1
-    if cnt <= BIGCHUNKSZ
-        return (cnt <= CHUNKSZ
-                ? count_ones(_mask_bytes(_get_lead(_pntchunk(beg), cnt))
-                : count_ones(_mask_bytes(_get_lead(_pntbigchunk(beg), cnt))
-    end
-    len = count_ones(_get_lead(_pntchunk(beg)))
-    cnt -= CHUNKSZ
-    pnt = _pntbigchunk(beg + CHUNKSZ)
-    v = _get_lead(pnt)
-    cnt <= BIGCHUNKSZ && return len + count_ones(_mask_bytes(v, cnt))
-    fin = pnt + cnt
-    while (pnt += BIGCHUNKSZ) < fin
-        len += count_ones(v)
-        v = _get_lead(pnt)
-    end
-    len + count_ones(_mask_bytes(v, cnt))
+    (cnt <= BIGCHUNKSZ
+     ? (cnt <= CHUNKSZ
+        ? count_ones(_mask_bytes(_get_lead(_pntchunk(beg), cnt)))
+        : count_ones(_mask_bytes(_get_lead(_pntbigchunk(beg), cnt))))
+     : _length_utf16_al(beg, cnt))
 end
 
 function _length_ul(::MultiCU, ::Type{UTF16CSE}, beg::Ptr{UInt16}, cnt::Int)
@@ -104,20 +110,6 @@ function _prevind(::MultiCU, str::MS_UTF16, pos::Int, nchar::Int)
 end
 
 # Check for any surrogate characters
-function is_bmp(str::MS_UTF16)
-    (siz = sizeof(str)) == 0 && return true
-    # Todo: handle unaligned for ARM32
-    @preserve str begin
-        siz < CHUNKSZ && return (_get_masked(_pntchunk(str)) & _mask_bytes(siz)) == 0
-
-        pnt, fin = _calcpnt(str, siz)
-        while (pnt += CHUNKSZ) <= fin
-            _get_masked(pnt) == 0 || return false
-        end
-        pnt - CHUNKSZ == fin || (_get_masked(pnt) & _mask_bytes(siz)) == 0
-    end
-end
-
 @inline function _check_bmp_utf16_al(beg, cnt)
     cnt <= CHUNKSZ && return _mask_bytes(_get_masked(_pntchunk(beg)), cnt) == 0
     cnt <= BIGCHUNKSZ && return _mask_bytes(_get_masked(_pntbigchunk(beg)), cnt) == 0

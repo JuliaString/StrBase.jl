@@ -7,6 +7,144 @@ Licensed under MIT License, see LICENSE.md
 Based initially on julia/test/strings/util.jl
 =#
 
+function _concat(T, a, b)
+    la = ncodeunits(a)
+    lb = ncodeunits(b)
+    buf, out = _allocate(T, la + lb)
+    @preserve a unsafe_copyto!(out, pointer(a), la)
+    @preserve b unsafe_copyto!(out + la, pointer(b), lb)
+    buf
+end
+
+function _string(T, a, b, rest)
+    la = ncodeunits(a)
+    lb = ncodeunits(b)
+    len = la + lb
+    @inbounds for str in rest
+        len += ncodeunits(str)
+    end
+    buf, out = _allocate(T, len)
+    @preserve a unsafe_copyto!(out, pointer(a), la)
+    out += la
+    @preserve b unsafe_copyto!(out, pointer(b), lb)
+    out += lb
+    @inbounds for str in rest
+        len = ncodeunits(str)
+        @preserve str unsafe_copyto!(out, pointer(str), len)
+        out += len
+    end
+    buf
+end
+
+function _string(T, coll)
+    len = 0
+    @inbounds for str in coll
+        len += ncodeunits(str)
+    end
+    buf, out = _allocate(T, len)
+    @inbounds for str in coll
+        len = ncodeunits(str)
+        @preserve str unsafe_copyto!(out, pointer(str), len)
+        out += len
+    end
+    buf
+end
+
+# Handle concatenation where all the same CSE for strings, and character set for characters
+#=
+"""
+WIP: this is rather tricky.
+It really should handle any type of Chr / Str / CSE, not just the ones defined
+in CharSetEncodings, ChrBase and StrBase
+Ideally, it could also handle mixes with String and Char (or other AbstractString / AbstractChar
+types.
+It may need to do two or even three passes, one to determine the correct type to be output,
+another to determine the output length, and finally another to copy the strings / characters into
+the buffer.
+The result type should be based on promotion rules, i.e. outputting UCS2Str if only ASCII, Latin, UCS2 characters and strings are in the list.
+This is difficult to do in a way that will still be type stable.
+"""
+
+function _string_chr(a::Union{<:Chr{CS,T}, <:Str{C}, SubString{<:Str{C}}}...
+                     ) where {CS<:CharSet,T,C<:CSE{CS}}
+    len = 0
+    for v in a
+        if v isa Chr
+            len += 1
+        else
+            len += ncodeunits(v)
+        end
+    end
+    buf, out = _allocate(T, len)
+    for v in a
+        len = ncodeunits(str)
+        @preserve str unsafe_copyto!(out, pointer(str), len)
+        out += len
+    end
+    buf
+end
+=#
+
+string(c::MaybeSub{<:Str}) = c
+string(c::MaybeSub{<:Str{<:Union{ASCIICSE,Latin_CSEs}}}...) = Str(LatinCSE, _string(UInt8, c))
+string(c::MaybeSub{<:Str{<:Union{ASCIICSE,UTF8CSE}}}...) = Str(UTF8CSE, _string(UInt8, c))
+string(c::MaybeSub{<:Str{<:UCS2_CSEs}}...) = Str(UCS2CSE, _string(UInt16, c))
+string(c::MaybeSub{<:Str{<:Union{UCS2_CSEs,UTF16CSE}}}...) = Str(UTF16CSE, _string(UInt16, c))
+string(c::MaybeSub{<:Str{<:UTF32_CSEs}}...) = Str(UTF32CSE, _string(UInt32, c))
+
+#=
+const MS_Str{C} = MaybeSub{<:Str{C}}
+string(a::MS_Str{C}, b::MS_Str{C}) where {C<:CSE} = Str(C, _concat(codeunit(C), a, b))
+string(a::MS_Str{C}, b::MS_Str{C}, c::MS_Str{C}...) where {C<:CSE} =
+    Str(C, _string(codeunit(C), a, b, c))
+
+string(a::T, b::T) where {T<:MS_Str{ASCIICSE}} = string(ASCIICSE, _concat(UInt8, a, b))
+string(a::T, b::T) where {T<:MS_Str{ASCIICSE}} = string(ASCIICSE, _concat(UInt8, a, b))
+string(a::T, b::T) where {T<:MS_Str{ASCIICSE}} = string(ASCIICSE, _concat(UInt8, a, b))
+
+const MS_AL = MS_Str{<:Union{ASCIICSE,Latin_CSEs}}
+string(a::MS_AL, b::MS_AL) = Str(LatinCSE, _concat(UInt8, a, b))
+string(a::MS_AL, b::MS_AL, c::MS_AL...) = Str(LatinCSE, _string(UInt8, a, b, c))
+
+const MS_AU = MS_Str{<:Union{ASCIICSE,UTF8CSE}}
+string(a::MS_AU, b::MS_AU) = Str(UTF8CSE, _concat(UInt8, a, b))
+string(a::MS_AU, b::MS_AU, c::MS_AU...) = Str(UTF8CSE, _string(UInt8, a, b, c))
+
+const MS_U2 = MS_Str{<:UCS2_CSEs}
+string(a::MS_U2, b::MS_U2) = Str(UCS2CSE, _concat(UInt16, a, b))
+string(a::MS_U2, b::MS_U2, c::MS_U2...) = Str(UCS2CSE, _string(UInt16, a, b, c))
+
+const MS_UT = MS_Str{<:Union{UCS2_CSEs,UTF16CSE}}
+string(a::MS_UT, b::MS_UT) = Str(UTF16CSE, _concat(UInt16, a, b))
+string(a::MS_UT, b::MS_UT, c::MS_UT...) = Str(UTF16CSE, _string(UInt16, a, b, c))
+
+const MS_U4 = MS_Str{<:UTF32_CSEs}
+string(a::MS_U4, b::MS_U4) = Str(UTF32CSE, _concat(UInt32, a, b))
+string(a::MS_U4, b::MS_U4, c::MS_U4...) = Str(UTF32CSE, _string(UInt32, a, b, c))
+=#
+
+#=
+string(c::MaybeSub{<:Str{<:Union{ASCIICSE,Latin_CSEs}}}...) =
+    length(c) == 1 ? c[1] : Str(LatinCSE, _string(UInt8, c))
+
+string(c::MaybeSub{<:Str{<:Union{ASCIICSE,UTF8CSE}}}...) =
+    length(c) == 1 ? c[1] : Str(UTF8CSE, _string(UInt8, c))
+
+string(c::MaybeSub{<:Str{<:UCS2_CSEs}}...) =
+    length(c) == 1 ? c[1] : Str(UCS2CSE, _string(UInt16, c))
+
+string(c::MaybeSub{<:Str{<:Union{UCS2_CSEs,UTF16CSE}}}...) =
+    length(c) == 1 ? c[1] : Str(UTF16CSE, _string(UInt16, c))
+
+string(c::MaybeSub{<:Str{<:UTF32_CSEs}}...) =
+    length(c) == 1 ? c[1] : Str(UTF32CSE, _string(UInt32, c))
+=#
+string(c::MaybeSub{<:Str{<:Union{ASCIICSE,Latin_CSEs}}}...) = Str(LatinCSE, _string(UInt8, c))
+string(c::MaybeSub{<:Str{<:Union{ASCIICSE,UTF8CSE}}}...) = Str(UTF8CSE, _string(UInt8, c))
+string(c::MaybeSub{<:Str{<:UCS2_CSEs}}...) = Str(UCS2CSE, _string(UInt16, c))
+string(c::MaybeSub{<:Str{<:Union{UCS2_CSEs,UTF16CSE}}}...) = Str(UTF16CSE, _string(UInt16, c))
+string(c::MaybeSub{<:Str{<:UTF32_CSEs}}...) = Str(UTF32CSE, _string(UInt32, c))
+
 # starts with and ends with predicates
 
 starts_with(a::MaybeSub{<:Str{C}}, b::MaybeSub{<:Str{C}}) where {C<:CSE} =

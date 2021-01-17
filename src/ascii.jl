@@ -1,31 +1,11 @@
 #=
 ASCIIStr type
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones,
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones,
 and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based in part on code for ASCIIString that used to be in Julia
 =#
-
-## overload methods for efficiency ##
-
-function _string(coll)
-    n = 0
-    for str in coll
-        n += ncodeunits(str)
-    end
-    buf, out = _allocate(UInt8, n)
-    for str in coll
-        @preserve str begin
-            len = ncodeunits(str)
-            unsafe_copyto!(out, pointer(str), len)
-            out += len
-        end
-    end
-    buf
-end
-
-string(c::MaybeSub{<:Str{ASCIICSE}}...) = length(c) == 1 ? c[1] : Str(ASCIICSE, _string(c))
 
 ## transcoding to ASCII ##
 
