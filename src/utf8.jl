@@ -213,7 +213,7 @@ is_ascii(str::SubString{<:Str{C}}) where {C<:ASCII_Union} =
 
 is_ascii(vec::Vector{T}) where {T<:CodeUnitTypes} =
     (cnt = sizeof(vec)) == 0 ||
-         (@preserve str _check_mask_ul(pointer(vec), cnt, _ascii_mask(T)))
+         (@preserve vec _check_mask_ul(pointer(vec), cnt, _ascii_mask(T)))
 
 is_ascii(str::Str{C}) where {C<:ASCII_Union} =
     (cnt = sizeof(str)) == 0 ||
