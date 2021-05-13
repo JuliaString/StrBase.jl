@@ -387,9 +387,9 @@ _iterate(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) wher
 end
 
 _next(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
-    str_next(str.data, pos)
+    iterate(str.data, pos)
 _next(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) where {T} =
-    str_next(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
+    iterate(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
 
 ## overload methods for efficiency ##
 
