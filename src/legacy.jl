@@ -4,8 +4,8 @@
 
 # Renamed from ascii to to_ascii, to prevent issues with Base.ascii
 to_ascii(str) = convert(ASCIIStr, str)
-to_ascii(pnt::Ptr{UInt8}) = convert(ASCIIStr, unsafe_string(p))
-to_ascii(pnt::Ptr{UInt8}, len::Integer) = convert(ASCIIStr, unsafe_string(p, len))
+to_ascii(p::Ptr{UInt8}) = convert(ASCIIStr, unsafe_string(p))
+to_ascii(p::Ptr{UInt8}, len::Integer) = convert(ASCIIStr, unsafe_string(p, len))
 
 """
     utf8(s)
