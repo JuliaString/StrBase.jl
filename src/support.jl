@@ -264,7 +264,7 @@ function unsafe_check_string(str::T;
     totalchar = latin1byte = num2byte = num3byte = num4byte = invalids = 0
     pos = 1
     @inbounds while !str_done(str, pos)
-        chr, nxt = str_next(str, pos)
+        chr, nxt = iterate(str, pos)
         ch = chr%UInt32
         totalchar += 1
         if ch > 0x7f
@@ -288,7 +288,7 @@ function unsafe_check_string(str::T;
                     break
                 end
                 # next character *must* be a trailing surrogate character
-                chr, nxt = str_next(str, nxt)
+                chr, nxt = iterate(str, nxt)
                 if !is_surrogate_trail(chr)
                     accept_invalids || strerror(StrErrors.NOT_TRAIL, pos, chr)
                     invalids += 1

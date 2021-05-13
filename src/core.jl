@@ -2,7 +2,7 @@
 Core functions
 
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones, and others (see Julia contributors)
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones, and others (see Julia contributors)
 Licensed under MIT License, see LICENSE.md
 
 Inspired by / derived from code in Julia
@@ -33,7 +33,7 @@ _nextcp(::Type{T}, pnt) where {T} = _nextcpfun(EncodingStyle(T), T, pnt)
 
 # Use more generic length check
 @inline _length_check(str::SubString{<:Str{C}}, cnt) where {C<:CSE} =
-    _length(MultiCU(), C, pointer(str), cnt)
+    @preserve str _length_ul(MultiCU(), C, pointer(str), cnt)
 
 # Go directly to aligned length check
 @inline _length_check(str::Str{C}, cnt) where {C<:CSE} =
@@ -42,7 +42,7 @@ _nextcp(::Type{T}, pnt) where {T} = _nextcpfun(EncodingStyle(T), T, pnt)
 @inline _length(::MultiCU, str::MaybeSub{T}) where {T<:Str} =
     (cnt = ncodeunits(str); cnt < 2 ? Int(cnt > 0) : @preserve str _length_check(str, cnt))
 
-@inline _length(::SingleCU, ::Type{<:CSE}, ::Ptr{<:CodeUnitTypes}, cnt::Int) = cnt
+@inline _length_ul(::SingleCU, ::Type{<:CSE}, ::Ptr{<:CodeUnitTypes}, cnt::Int) = cnt
 
 @inline _length(::MultiCU, str::Str{RawUTF8CSE}) = length(str.data)
 @inline _length(::MultiCU, str::Str{RawUTF8CSE}, i::Int, j::Int) = length(str.data, i, j)
@@ -55,7 +55,7 @@ _nextcp(::Type{T}, pnt) where {T} = _nextcpfun(EncodingStyle(T), T, pnt)
         0 <= j <  lim || boundserr(str, j)
     end
     (cnt = j - i + 1) <= 0 ? 0 :
-        @preserve str _length(cs, cse(str), bytoff(pointer(str), i - 1), cnt)
+        @preserve str _length_ul(cs, cse(str), bytoff(pointer(str), i - 1), cnt)
 end
 
 @inline _thisind(::SingleCU, str, len, pnt, pos) = Int(pos)

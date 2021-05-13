@@ -1,7 +1,7 @@
 #=
 UTF8Str type
 
-Copyright 2017-2018 Gandalf Software, Inc., Scott P. Jones,
+Copyright 2017-2020 Gandalf Software, Inc., Scott P. Jones,
 and other contributors to the Julia language
 
 Licensed under MIT License, see LICENSE.md
@@ -90,161 +90,237 @@ xor 80 then << 1 then |
 =#
 
 const hi_mask = CHUNKSZ == 4 ? 0x8080_8080 : 0x8080_8080_8080_8080
+const big_hi_mask = _widen_mask(hi_mask)
 
-@inline _count_cont(v) = (v = xor(v, hi_mask); count_ones(xor(((v << 1) | v), hi_mask) & hi_mask))
-@inline msk_lead(v) = (v = xor(v, hi_mask); xor(xor(((v << 1) | v), hi_mask) & hi_mask, hi_mask))
+@inline get_high_mask(::UInt) = hi_mask
+@inline get_high_mask(::BigChunk) = big_hi_mask
 
-@inline function _align_len_utf8(pnt, cnt, v)
+@inline msk_lead(v, msk) = (v = xor(v, msk); xor(xor(((v << 1) | v), msk) & msk, msk))
+
+@inline msk_lead(v) = msk_lead(v, get_high_mask(v))
+
+@inline get_lead(T, ptr) = msk_lead(unsafe_load(reinterpret(Ptr{T}, ptr)))
+
+@inline count_masked(v, cnt) = count_ones(_mask_bytes(v, cnt))
+
+function _length_al(::MultiCU, ::Type{UTF8CSE}, beg::Ptr{UInt8}, cnt::Int)
+    # First check very frequent cases of short strings
+    # (on 64-bit machines, 1-8 bytes, 9-16 bytes, and 17-24)
+    # taking advantage of the knowledge of how String types are stored in Julia,
+    # i.e. UInt length, immediate followed by the string data, aligned on sizeof(UInt)*2
+    if cnt <= BIGCHUNKSZ
+        return (cnt <= CHUNKSZ
+                ? count_masked(get_lead(UInt, beg), cnt)
+                : count_masked(get_lead(BigChunk, beg), cnt))
+    end
+    len = count_ones(get_lead(UInt, beg))
+    cnt -= CHUNKSZ
+    pnt = _pntbigchunk(beg + CHUNKSZ)
+    v = get_lead(BigChunk, pnt)
+    cnt <= BIGCHUNKSZ && return len + count_masked(v, cnt)
+    fin = _pntbigchunk(beg + CHUNKSZ + cnt)
+    while (pnt += BIGCHUNKSZ) < fin
+        len += count_ones(v)
+        v = get_lead(BigChunk, pnt)
+    end
+    len + count_masked(v, cnt)
+end
+
+function _length_ul(::MultiCU, ::Type{UTF8CSE}, beg::Ptr{UInt8}, cnt::Int)
+    align = reinterpret(UInt, beg)
+    pnt = reinterpret(Ptr{BigChunk}, align & ~BIGCHUNKMSK)
+    v = unsafe_load(pnt)
+    if (align &= BIGCHUNKMSK) != 0
+        msk = _big_mask_bytes(align)
+        v = (v & ~msk) | (msk & big_hi_mask)
+        cnt += align
+    end
     len = 0
     fin = pnt + cnt
     v = msk_lead(v)
-    while (pnt += CHUNKSZ) < fin
+    while (pnt += BIGCHUNKSZ) < fin
         len += count_ones(v)
         v = msk_lead(unsafe_load(pnt))
     end
-    len + count_ones(cnt & CHUNKMSK == 0 ? v : (v & _mask_bytes(cnt)))
+    len + count_masked(v, cnt)
 end
 
-_length_al(::MultiCU, ::Type{UTF8CSE}, beg::Ptr{UInt8}, cnt::Int) =
-    (pnt = reinterpret(Ptr{UInt}, beg); _align_len_utf8(pnt, cnt, unsafe_load(pnt)))
+@inline get_chunk(ptr, msk::T, cnt) where {T} =
+    _mask_bytes(unsafe_load(reinterpret(Ptr{T}, ptr)) & msk, cnt)
 
-function _length(::MultiCU, ::Type{UTF8CSE}, beg::Ptr{UInt8}, cnt::Int)
-    align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
+@inline function _check_mask_al(ptr, cnt, msk)
+    # First check very frequent cases of short strings
+    # (on 64-bit machines, 1-8 bytes, 9-16 bytes, and 17-24)
+    # taking advantage of the knowledge of how String types are stored in Julia,
+    # i.e. UInt length, immediate followed by the string data, aligned on sizeof(UInt)*2
+    cnt <= CHUNKSZ && return get_chunk(ptr, msk, cnt) == 0
+    bigmsk = _widen_mask(msk)
+    cnt <= BIGCHUNKSZ && return get_chunk(ptr, bigmsk, cnt) == 0
+    (unsafe_load(_pntchunk(ptr)) & msk) == 0 || return false
+    cnt -= CHUNKSZ
+    cnt <= BIGCHUNKSZ && return get_chunk(ptr, bigmsk, cnt) == 0
+    pnt = _pntbigchunk(ptr + CHUNKSZ)
+    fin = _pntbigchunk(ptr + CHUNKSZ + cnt)
     v = unsafe_load(pnt)
-    if (align &= CHUNKMSK) != 0
-        msk = _mask_bytes(align)
-        v = (v & ~msk) | (msk & hi_mask)
-        cnt += align
-    end
-    _align_len_utf8(pnt, cnt, v)
-end
-
-@inline function _check_mask_al(pnt, cnt, msk, v)
-    fin = pnt + cnt
-    while (pnt += CHUNKSZ) < fin
-        (v & msk) == 0 || return false
+    while (pnt += BIGCHUNKSZ) < fin
+        (v & bigmsk) == 0 || return false
         v = unsafe_load(pnt)
     end
-    (cnt & CHUNKMSK == 0 ? v : (v & _mask_bytes(cnt))) & msk == 0
+    _mask_bytes(v & bigmsk, cnt) == 0
 end
-@inline _check_mask_al(pnt, cnt, msk) = _check_mask_al(pnt, cnt, msk, unsafe_load(pnt))
 
 @inline function _check_mask_ul(beg, cnt, msk)
+    bigmsk = _widen_mask(msk)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
+    pnt = _pntbigchunk(align & ~BIGCHUNKMSK)
     v = unsafe_load(pnt)
-    if (align &= CHUNKMSK) != 0
-        v &= ~_mask_bytes(align)
+    if (align &= BIGCHUNKMSK) != 0
+        v &= ~_big_mask_bytes(align)
         cnt += align
     end
-    _check_mask_al(pnt, cnt, msk, v)
+    fin = pnt + cnt
+    while (pnt += BIGCHUNKSZ) < fin
+        (v & bigmsk) == 0 || return false
+        v = unsafe_load(pnt)
+    end
+    _mask_bytes(v & bigmsk, cnt) == 0
 end
 
 _ascii_mask(::Type{UInt8})  = hi_mask
-_ascii_mask(::Type{UInt16}) = 0xff80_ff80_ff80_ff80
-_ascii_mask(::Type{UInt32}) = 0xffffff80_ffffff80
+@static if UInt == 4
+    _ascii_mask(::Type{UInt16}) = 0xff80_ff80
+    _ascii_mask(::Type{UInt32}) = 0xffffff80
 
-_latin_mask(::Type{UInt16}) = 0xff00_ff00_ff00_ff00
-_latin_mask(::Type{UInt32}) = 0xffffff00_ffffff00
+    _latin_mask(::Type{UInt16}) = 0xff00_ff00
+    _latin_mask(::Type{UInt32}) = 0xffffff00
 
-const _bmp_mask_32   = 0xffff0000_ffff0000
+    const _bmp_mask_32   = 0xffff0000
+else
+    _ascii_mask(::Type{UInt16}) = 0xff80_ff80_ff80_ff80
+    _ascii_mask(::Type{UInt32}) = 0xffffff80_ffffff80
 
-is_ascii(str::SubString{<:Str{C}}) where {C<:Union{UTF8CSE,LatinCSE,Binary_CSEs,UTF16CSE,UCS2CSE,
-                                                   Text2CSE,Text4CSE,UTF32CSE}} =
-    (cnt = sizeof(str)) == 0 ? true :
-    @preserve str _check_mask_ul(pointer(str), cnt, _ascii_mask(codeunit(C)))
+    _latin_mask(::Type{UInt16}) = 0xff00_ff00_ff00_ff00
+    _latin_mask(::Type{UInt32}) = 0xffffff00_ffffff00
+
+    const _bmp_mask_32   = 0xffff0000_ffff0000
+end
+
+const ASCII_Union = Union{UTF8CSE,LatinCSE,Binary_CSEs,UTF16CSE,UCS2CSE,Text2CSE,Text4CSE,UTF32CSE}
+
+is_ascii(str::SubString{<:Str{C}}) where {C<:ASCII_Union} =
+    (cnt = sizeof(str)) == 0 ||
+        (@preserve str _check_mask_ul(pointer(str), cnt, _ascii_mask(codeunit(C))))
 
 is_ascii(vec::Vector{T}) where {T<:CodeUnitTypes} =
-    (cnt = sizeof(vec)) == 0 ? true :
-    @preserve vec _check_mask_ul(pointer(vec), cnt, _ascii_mask(T))
+    (cnt = sizeof(vec)) == 0 ||
+         (@preserve vec _check_mask_ul(pointer(vec), cnt, _ascii_mask(T)))
 
-is_ascii(str::Str{C}) where {C<:Union{UTF8_CSEs,LatinCSE,Binary_CSEs,UTF16CSE,UCS2CSE,
-                                      Text2CSE,Text4CSE,UTF32CSE}} =
-    (cnt = sizeof(str)) == 0 ? true :
-    @preserve str _check_mask_al(reinterpret(Ptr{UInt}, pointer(str)), cnt,
-                                 _ascii_mask(codeunit(C)))
+is_ascii(str::Str{C}) where {C<:ASCII_Union} =
+    (cnt = sizeof(str)) == 0 ||
+         (@preserve str _check_mask_al(pointer(str), cnt, _ascii_mask(codeunit(C))))
 
 # Todo! Here you need to see that 0b11yyyyxx at least 1 y must be set,
 # which indicates a non-Latin1 character
-_all_latin(val) = ((val & (val<<1) & (val<<2 | (val<<3) | (val<<4) | (val<<5))) & hi_mask) == 0
+_all_latin(val) =
+    ((val & (val<<1) & (val<<2 | (val<<3) | (val<<4) | (val<<5))) & get_high_mask(val)) == 0
 
-@inline function _check_latin_utf8_al(pnt, cnt, v)
+@inline function _check_latin_utf8_al(beg, cnt)
+    cnt <= CHUNKSZ && return _all_latin(_mask_bytes(unsafe_load(_pntchunk(ptr)), cnt))
+    cnt <= BIGCHUNKSZ && return _all_latin(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    _all_latin(unsafe_load(_pntchunk(ptr))) || return false
+    cnt -= CHUNKSZ
+    cnt <= BIGCHUNKSZ && return  _all_latin(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    pnt = _pntbigchunk(ptr + CHUNKSZ)
+    v = unsafe_load(pnt)
     fin = pnt + cnt
-    while (pnt += CHUNKSZ) < fin
+    while (pnt += BIGCHUNKSZ) < fin
         _all_latin(v) || return false
         v = unsafe_load(pnt)
     end
-    _all_latin(cnt & CHUNKMSK == 0 ? v : (v & _mask_bytes(cnt)))
+    _all_latin(_mask_bytes(v, cnt))
 end
-@inline _check_latin_utf8_al(pnt, cnt) = _check_latin_utf8_al(pnt, cnt, unsafe_load(pnt))
 
 @inline function _check_latin_utf8_ul(beg, cnt)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{BigChunk}, align & ~BIGCHUNKMSK)
     v = unsafe_load(pnt)
-    if (align &= CHUNKMSK) != 0
-        v &= ~_mask_bytes(align)
+    if (align &= BIGCHUNKMSK) != 0
+        v &= ~_big_mask_bytes(align)
         cnt += align
     end
-    _check_latin_utf8_al(pnt, cnt, v)
+    fin = pnt + cnt
+    while (pnt += BIGCHUNKSZ) < fin
+        _all_latin(v) || return false
+        v = unsafe_load(pnt)
+    end
+    _all_latin(_mask_bytes(v, cnt))
 end
 
 is_latin(str::Str{UTF8CSE}) =
-    (siz = sizeof(str)) == 0 ? true :
-    @preserve str _check_latin_utf8_al(reinterpret(Ptr{UInt}, pointer(str)), siz)
+    (siz = sizeof(str)) == 0 || @preserve str _check_latin_utf8_al(pointer(str), siz)
 
 is_latin(str::SubString{<:Str{UTF8CSE}}) =
-    (cnt = sizeof(str)) == 0 ? true : @preserve str _check_latin_utf8_ul(pointer(str), cnt)
+    (cnt = sizeof(str)) == 0 || @preserve str _check_latin_utf8_ul(pointer(str), cnt)
 
 is_latin(vec::Vector{T}) where {T<:Union{UInt16,UInt32}} =
-    (cnt = sizeof(vec)) == 0 ? true :
+    (cnt = sizeof(vec)) == 0 ||
     @preserve vec _check_mask_ul(pointer(vec), cnt, _latin_mask(T))
 
 is_latin(str::SubString{<:Str{C}}) where {C<:Union{Word_CSEs,Quad_CSEs}} =
-    (cnt = sizeof(str)) == 0 ? true :
+    (cnt = sizeof(str)) == 0 ||
     @preserve str _check_mask_ul(pointer(str), cnt, _latin_mask(codeunit(C)))
 
 is_latin(str::Str{C}) where {C<:Union{Word_CSEs,Quad_CSEs}} =
-    (cnt = sizeof(str)) == 0 ? true :
+    (cnt = sizeof(str)) == 0 ||
     @preserve str _check_mask_al(pointer(str), cnt, _latin_mask(codeunit(C)))
 
 # All 4 top bits must be 1 (i.e. 0xfx) for this to be non-BMP
-_all_bmp(val) = ((val | (val<<1) | (val<<2) | (val<<3)) & hi_mask) == 0
+_all_bmp(val) = ((val | (val<<1) | (val<<2) | (val<<3)) & get_high_mask(val)) == 0
 
-@inline function _check_bmp_utf8_al(pnt, cnt, v)
-    fin = pnt + cnt
-    while (pnt += CHUNKSZ) < fin
+@inline function _check_bmp_utf8_al(beg, cnt)
+    cnt <= CHUNKSZ && return _all_bmp(_mask_bytes(unsafe_load(_pntchunk(ptr)), cnt))
+    bigmsk = _widen_mask(msk)
+    cnt <= BIGCHUNKSZ && return _all_bmp(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    _all_bmp(unsafe_load(_pntchunk(ptr))) || return false
+    cnt -= CHUNKSZ
+    cnt <= BIGCHUNKSZ && return  _all_bmp(_mask_bytes(unsafe_load(_pntbigchunk(ptr)), cnt))
+    pnt = _pntbigchunk(ptr + CHUNKSZ)
+    fin = _pntbigchunk(ptr + CHUNKSZ + cnt)
+    v = unsafe_load(pnt)
+    while (pnt += BIGCHUNKSZ) < fin
         _all_bmp(v) || return false
         v = unsafe_load(pnt)
     end
-    _all_bmp(cnt & CHUNKMSK == 0 ? v : (v & _mask_bytes(cnt)))
+    _all_bmp(_mask_bytes(v, cnt))
 end
-@inline _check_bmp_utf8_al(pnt, cnt) = _check_bmp_utf8_al(pnt, cnt, unsafe_load(pnt))
 
 @inline function _check_bmp_utf8_ul(beg, cnt)
     align = reinterpret(UInt, beg)
-    pnt = reinterpret(Ptr{UInt}, align & ~CHUNKMSK)
+    pnt = reinterpret(Ptr{BigChunk}, align & ~BIGCHUNKMSK)
     v = unsafe_load(pnt)
-    if (align &= CHUNKMSK) != 0
-        v &= ~_mask_bytes(align)
+    if (align &= BIGCHUNKMSK) != 0
+        v &= ~_big_mask_bytes(align)
         cnt += align
     end
-    _check_bmp_utf8_al(pnt, cnt, v)
+    fin = pnt + cnt
+    while (pnt += BIGCHUNKSZ) < fin
+        _all_bmp(v) || return false
+        v = unsafe_load(pnt)
+    end
+    _all_bmp(_mask_bytes(v, cnt))
 end
 
 is_bmp(str::Str{UTF8CSE}) =
-    (cnt = sizeof(str)) == 0 ? true :
-    @preserve str _check_bmp_utf8_al(reinterpret(Ptr{UInt}, pointer(str)), cnt)
+    (cnt = sizeof(str)) == 0 || @preserve str _check_bmp_utf8_al(pointer(str), cnt)
 
 is_bmp(str::SubString{<:Str{UTF8CSE}}) =
-    (cnt = sizeof(str)) == 0 ? true : @preserve str _check_bmp_utf8_ul(pointer(str), cnt)
+    (cnt = sizeof(str)) == 0 || @preserve str _check_bmp_utf8_ul(pointer(str), cnt)
 
 is_bmp(str::SubString{<:Str{<:Union{Text4CSE,UTF32CSE}}}) =
-    (cnt = sizeof(str)) == 0 ? true : @preserve str _check_mask_ul(pointer(str), cnt, _bmp_mask_32)
+    (cnt = sizeof(str)) == 0 || @preserve str _check_mask_ul(pointer(str), cnt, _bmp_mask_32)
 
 is_bmp(str::Str{<:Union{Text4CSE,UTF32CSE}}) =
-    (cnt = sizeof(str)) == 0 ? true : @preserve str _check_mask_al(pointer(str), cnt, _bmp_mask_32)
+    (cnt = sizeof(str)) == 0 || @preserve str _check_mask_al(pointer(str), cnt, _bmp_mask_32)
 
 is_unicode(str::MS_UTF8) = true
 
@@ -387,9 +463,9 @@ _iterate(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) wher
 end
 
 _next(::MultiCU, ::Type{T}, str::Str{RawUTF8CSE}, pos::Int) where {T} =
-    str_next(str.data, pos)
+    iterate(str.data, pos)
 _next(::MultiCU, ::Type{T}, str::SubString{<:Str{RawUTF8CSE}}, pos::Int) where {T} =
-    str_next(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
+    iterate(SubString(str.string.data, str.offset + pos, str.offset + ncodeunits(str)), 1)
 
 ## overload methods for efficiency ##
 
@@ -523,15 +599,6 @@ _prevind(::MultiCU, str::Str{RawUTF8CSE}, pos::Int, nchar::Int) =
     prevind(str.data, pos, nchar)
 _prevind(::MultiCU, str::Str{RawUTF8CSE}, pos::Int) =
     prevind(str.data, pos)
-
-#=
-const _ByteStr = Union{Str{ASCIICSE}, SubString{<:Str{ASCIICSE}},
-                       Str{UTF8CSE},  SubString{<:Str{UTF8CSE}}}
-
-string(s::_ByteStr) = s
-string(s::_ByteStr, c::_ByteStr...) = UTF8Str(_string(c))
-    # ^^ at least one must be UTF-8 or the ASCII-only method would get called
-=#
 
 function _reverse(::MultiCU, ::Type{UTF8CSE}, len, pnt::Ptr{T}) where {T<:CodeUnitTypes}
     buf, beg = _allocate(T, len)

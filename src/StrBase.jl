@@ -23,14 +23,15 @@ using ModuleInterfaceTools
 
 @api develop! check_string, unsafe_check_string, fast_check_string, skipascii, skipbmp,
               countmask, count_chars, _count_mask_al, _count_mask_ul, count_latin,
-              _copysub, _cvtsize, _repeat, empty_str, _data, _pntchunk, _str,
+              _copysub, _cvtsize, _repeat, empty_str, _data, _mask_bytes,
+              _pntchunk, _pntbigchunk, _str,
               ValidatedStyle, MutableStyle, EqualsStyle, CanContain
 
 @api develop LineCounts, CharTypes, CharStat, maxbit, calcstats, check_continuation,
              UTF_LONG, UTF_LATIN1, UTF_UNICODE2, UTF_UNICODE3, UTF_UNICODE4, UTF_SURROGATE,
-             UTF_INVALID, CHUNKSZ, CHUNKMSK,
+             UTF_INVALID, CHUNKSZ, CHUNKMSK, BIGCHUNKSZ, BIGCHUNKMSK,
              _memcmp, _memcpy, _memset, _fwd_memchr, _rev_memchr,
-             empty_string, _calcpnt, _mask_bytes, _allocate,
+             BigChunk, empty_string, _calcpnt, _allocate, SingleCU, MultiCU,
              MS_UTF8, MS_UTF16, MS_UTF32, MS_SubUTF32, MS_Latin, MS_ByteStr, MS_RawUTF8,
              _wrap_substr, _empty_sub,
              AccessType, UInt16_U, UInt32_U, UInt16_S, UInt32_S, UInt16_US, UInt32_US,

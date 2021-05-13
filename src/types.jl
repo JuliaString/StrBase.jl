@@ -30,18 +30,6 @@ _mskdn32(v, m, s) = _msk32(v, m) >>> s
 (::Type{Str})(::Type{C}, v::String) where {C<:CSE} = Str(C, v, nothing, nothing, nothing)
 (::Type{Str})(::Type{C}, v::Str) where {C<:CSE} = Str(C, v.data, nothing, nothing, nothing)
 
-# Handle change from endof -> lastindex
-@static if !isdefined(Base, :lastindex)
-    lastindex(str::AbstractString) = Base.endof(str)
-    lastindex(arr::AbstractArray) = Base.endof(arr)
-    Base.endof(str::Str) = lastindex(str)
-end
-@static if !isdefined(Base, :firstindex)
-    firstindex(str::AbstractString) = 1
-    # AbstractVector might be an OffsetArray
-    firstindex(str::Vector) = 1
-end
-
 # Definition of built-in Str types
 
 const empty_string = ""
@@ -131,8 +119,18 @@ pointer(s::Str{<:Quad_CSEs}) = reinterpret(Ptr{UInt32}, pointer(s.data))
 const CHUNKSZ = sizeof(UInt) # used for fast processing of strings
 const CHUNKMSK = (CHUNKSZ-1)%UInt
 
-_pntchunk(s::Union{String,Vector{UInt8}}) = reinterpret(Ptr{UInt}, pointer(s))
-_pntchunk(s::Str) = reinterpret(Ptr{UInt}, pointer(s.data))
+_pntchunk(p::Union{UInt,Ptr}) = reinterpret(Ptr{UInt}, p)
+_pntchunk(s::Union{String,Vector{UInt8}}) = _pntchunk(pointer(s))
+_pntchunk(s::Str) = _pntchunk(pointer(s.data))
+
+# Type and mask for even faster string handling
+const BigChunk = UInt === UInt32 ? UInt64 : UInt128
+const BIGCHUNKSZ = sizeof(BigChunk)
+const BIGCHUNKMSK = (BIGCHUNKSZ-1)%UInt
+
+_pntbigchunk(p::Union{UInt,Ptr}) = reinterpret(Ptr{BigChunk}, p)
+_pntbigchunk(s::Union{String,Vector{UInt8}}) = _pntbigchunk(pointer(s))
+_pntbigchunk(s::Str) = _pntbigchunk(pointer(s.data))
 
 """Length of string in codeunits"""
 ncodeunits(s::Str)              = sizeof(s)
@@ -143,6 +141,15 @@ ncodeunits(s::Str{<:Quad_CSEs}) = sizeof(s) >>> 2
 @inline _calcpnt(str, siz) = (pnt = _pntchunk(str) - CHUNKSZ;  (pnt, pnt + siz))
 
 @inline _mask_bytes(n) = ((1%UInt) << ((n & CHUNKMSK) << 3)) - 0x1
+
+@inline _big_mask_bytes(n) = ((1%BigChunk) << ((n & BIGCHUNKMSK) << 3)) - 0x1
+
+@inline function _mask_bytes(v::T, cnt) where {T}
+    shft = ((cnt & (sizeof(T) - 1))%UInt) << 3
+    ifelse(shft == 0, v, v & ~(typemax(T) << shft))
+end
+
+@inline _widen_mask(msk::UInt) = ((msk%BigChunk) << (8*sizeof(UInt))) | msk
 
 # Support for SubString of Str
 

@@ -121,6 +121,10 @@ found(::Type{<:AbstractString}, v) = v != 0
 find_result(::Type{<:AbstractString}, v) = v
 
 nothing_sentinel(i) = first(i) == 0 ? nothing : i
+Base.findfirst(a::AbstractChar, b::Str)   = nothing_sentinel(find(First, a, b))
+Base.findlast(a::AbstractChar, b::Str)    = nothing_sentinel(find(Last, a, b))
+Base.findnext(a::AbstractChar, b::Str, i) = nothing_sentinel(find(Fwd, a, b, i))
+Base.findprev(a::AbstractChar, b::Str, i) = nothing_sentinel(find(Rev, a, b, i))
 Base.findfirst(a, b::Str)   = nothing_sentinel(find(First, a, b))
 Base.findlast(a, b::Str)    = nothing_sentinel(find(Last, a, b))
 Base.findnext(a, b::Str, i) = nothing_sentinel(find(Fwd, a, b, i))
@@ -189,7 +193,7 @@ function find(::Type{D}, needle::AbstractString, str::AbstractString,
     @inbounds is_valid(str, pos) || index_error(str, pos)
     (tlen = ncodeunits(needle)) == 0 && return pos:pos-1
     (cmp = CanContain(str, needle)) === NoCompare() && return _not_found
-    @inbounds ch, nxt = str_next(needle, 1)
+    @inbounds ch, nxt = iterate(needle, 1)
     is_valid(eltype(str), ch) || return _not_found
     # Check if single character
     if nxt > tlen
@@ -205,7 +209,7 @@ function find(::Type{T}, needle::AbstractString, str::AbstractString) where {T<:
     pos = T === First ? 1 : thisind(str, slen)
     (tlen = ncodeunits(needle)) == 0 && return pos:(pos-1)
     (cmp = CanContain(str, needle)) === NoCompare() && return _not_found
-    @inbounds ch, nxt = str_next(needle, 1)
+    @inbounds ch, nxt = iterate(needle, 1)
     is_valid(eltype(str), ch) || return _not_found
     # Check if single character
     if nxt > tlen
@@ -298,8 +302,8 @@ end
 """Compare two strings, starting at nxtstr and nxtsub"""
 @inline function _cmp_str(str, strpos, endpos, sub, subpos, endsub)
     while strpos <= endpos
-        c, strnxt = str_next(str, strpos)
-        d, subpos = str_next(sub, subpos)
+        c, strnxt = iterate(str, strpos)
+        d, subpos = iterate(sub, subpos)
         c == d || break
         subpos > endsub && return strpos
         strpos = strnxt

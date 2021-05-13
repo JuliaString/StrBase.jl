@@ -307,6 +307,31 @@
             #non-hex characters
             @test_throws ArgumentError hex2bytes(b"0123456789abcdefABCDEFGH")
         end
+
+        @testset "Concatenation" begin
+            asc = ASCIIStr("foo")
+            lat = LatinStr("bar")
+            ucs = UCS2Str("baz")
+            u32 = UTF32Str("silly")
+            ut8 = UTF8Str("test")
+            ut16 = UTF16Str("ugly")
+            haslat = _LatinStr("você")
+            hasucs = _UCS2Str("†")
+            hasu32 = _UTF32Str("\U1f596")
+            @test typeof(asc * asc) == ASCIIStr
+            @test typeof(asc * lat) == LatinStr
+            @test typeof(asc * ut8) == UTF8Str
+            @test typeof(asc * haslat) == LatinStr
+            @test typeof(lat * lat) == LatinStr
+            @test typeof(haslat * haslat) == _LatinStr
+            @test typeof(lat * haslat) == LatinStr
+            @test typeof(ucs * ucs) == UCS2Str
+            @test typeof(hasucs * hasucs) == _UCS2Str
+            @test typeof(ucs * hasucs) == UCS2Str
+            @test typeof(u32 * u32) == UTF32Str
+            @test typeof(hasu32 * hasu32) == _UTF32Str
+            @test typeof(u32 * hasu32) == UTF32Str
+        end
     end
 
     # b"" should be immutable

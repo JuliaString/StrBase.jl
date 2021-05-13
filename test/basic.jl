@@ -305,8 +305,8 @@ let
 
     @test lastindex(srep) == 7
 
-    @test str_next(srep, 3) == ('β',5)
-    @test str_next(srep, 7) == ('β',9)
+    @test iterate(srep, 3) == ('β',5)
+    @test iterate(srep, 7) == ('β',9)
 
     @test srep[7] == 'β'
     @test_throws StringIndexError srep[8]
@@ -340,8 +340,8 @@ end
     @test_throws MethodError codeunit(tstr, true)
     @test_throws MethodError isvalid(tstr, 1)
     @test_throws MethodError isvalid(tstr, true)
-    @test_throws MethodError str_next(tstr, 1)
-    @test_throws MethodError str_next(tstr, true)
+    @test_throws MethodError iterate(tstr, 1)
+    @test_throws MethodError iterate(tstr, true)
     @test_throws MethodError lastindex(tstr)
 
     gstr = GenericString("12")
@@ -611,7 +611,7 @@ end
     for st in ("Hello", "Σ", "こんにちは", "😊😁")
         local s
         s = ST(st)
-        @test str_next(s, lastindex(s))[2] > sizeof(s)
+        @test iterate(s, lastindex(s))[2] > sizeof(s)
         @test nextind(s, lastindex(s)) > sizeof(s)
     end
 end
@@ -915,7 +915,7 @@ function testbin(::Type{ST}) where {ST}
                  b"\xf8\x9f\x98\x84", b"\xf8\x9f\x98\x84z")),
         s in lst
         st = ST(s)
-        @test str_next(st, 1)[2] == 2
+        @test iterate(st, 1)[2] == 2
         @test nextind(st, 1) == 2
     end
 
@@ -930,7 +930,7 @@ function testbin(::Type{ST}) where {ST}
         (s, r) in lst
         st = ST(s)
         (ST === BinaryStr || ST === Text1Str) && (r = 2)
-        @test str_next(st, 1)[2] == r
+        @test iterate(st, 1)[2] == r
         @test nextind(st, 1) == r
     end
 end
@@ -950,12 +950,7 @@ end
     @test String(sym) == string(Char(0xdcdb))
     @test Meta.lower(Main, sym) === sym
     res = string(Meta.parse(string(Char(0xdcdb)," = 1"),1,raise=false)[1])
-    @static if VERSION ≥ v"1.5.0-DEV.460"
-        @test res == "\$(Expr(:error, \"invalid UTF-8 sequence\"))"
-    else
-        @test startswith(res, "\$(Expr(:error, \"invalid character \\\"\\udcdb\\\"")
-        @test endswith(res,   "\"))")
-    end
+    @test res == "\$(Expr(:error, \"invalid UTF-8 sequence\"))"
 end
 
 @testset "invalid code point" begin
