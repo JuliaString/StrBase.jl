@@ -1,7 +1,7 @@
 #=
 Statistics for Unicode character/string types
 
-Copyright 2017 Gandalf Software, Inc., Scott P. Jones
+Copyright 2017-2021 Gandalf Software, Inc., Scott P. Jones
 Licensed under MIT License, see LICENSE.md
 =#
 struct LineCounts
@@ -48,13 +48,24 @@ function calcstats(lines)
     minlen = typemax(Int)
     maxlen = 0
     maxtyp = 0
+    linnum = 0
     for l in lines
+        linnum += 1
         len = length(l)
         minlen = min(minlen, len)
         maxlen = max(maxlen, len)
         flags = 0
+        chrnum = 0
         for chr in l
-            ch = chr%UInt32
+            chrnum += 1
+            ch = UInt32(0)
+            try
+                ch = chr%UInt32
+            catch ex
+                typeof(ex) == InterruptException ||
+                    println("Bad character: $chr at line $linnum, pos $chrnum")
+                rethrow()
+            end
             t = ch <= 0x7f ? 1 :
                 ch <= 0xff ? 2 :
                 ch <= 0x7ff ? 3 :

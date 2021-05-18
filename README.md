@@ -14,9 +14,7 @@
 [gitter-img]:   https://badges.gitter.im/Join%20Chat.svg
 [gitter-url]:   https://gitter.im/JuliaString/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
 
-[travis-url]:   https://travis-ci.org/JuliaString/StrBase.jl
-[travis-s-img]: https://travis-ci.org/JuliaString/StrBase.jl.svg
-[travis-m-img]: https://travis-ci.org/JuliaString/StrBase.jl.svg?branch=master
+[checks]:       https://img.shields.io/github/checks-status/JuliaString/StrBase.jl/master
 
 [codecov-url]:  https://codecov.io/gh/JuliaString/StrBase.jl
 [codecov-img]:  https://codecov.io/gh/JuliaString/StrBase.jl/branch/master/graph/badge.svg
@@ -27,8 +25,8 @@
 
 | **Julia Version** | **Unit Tests** | **Coverage** |
 |:------------------:|:------------------:|:---------------------:|
-| [![][julia-release]][julia-url] | [![][travis-s-img]][travis-url] | [![][codecov-img]][codecov-url]
-| Julia Latest | [![][travis-m-img]][travis-url] | [![][codecov-img]][codecov-url]
+| [![][julia-release]][julia-url] | | [![][codecov-img]][codecov-url]
+| Julia Latest | [![][checks]][pkg-url] | [![][codecov-img]][codecov-url]
 
 See the documentation in the [Strs](https://github.com/JuliaString/Strs.jl) package,
 this package contains the basic functionality, which can be used by other string related packages.

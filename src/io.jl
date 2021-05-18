@@ -379,7 +379,7 @@ join(strings::AbstractArray{<:MaybeSub{T}}) where {C<:Quad_CSEs,T<:Str{C}} =
     _join(C, strings)
 
 join(strings::AbstractArray{<:MaybeSub{<:Str}}, delim) =
-    _joincvt(_calc_type(strings), strings, delim)
+    _joincvt(calc_type(strings), strings, delim)
 join(strings::AbstractArray{<:MaybeSub{T}},
      delim) where {C<:Union{Text1CSE, BinaryCSE, ASCIICSE, Latin_CSEs},T<:Str{C}} =
     _join(C, strings, delim)
