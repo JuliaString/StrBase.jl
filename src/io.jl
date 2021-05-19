@@ -241,7 +241,7 @@ function _joinio(io, ::Type{C}, strings) where {C}
     io
 end
 
-function _joinio(io, ::Type{C}, strings, delim::T) where {C,T}
+function _joinio(io, ::Type{C}, strings, num, delim::T) where {C,T}
     # Could speed this up in the common case where delim === 
     delbuf = (T <: AbstractString && cse(delim) === C) ? delim : convert(Str{C}, delim)
     @inbounds for str in strings
@@ -251,7 +251,7 @@ function _joinio(io, ::Type{C}, strings, delim::T) where {C,T}
     io
 end
 
-function _joinio(io, ::Type{C}, strings, delim::T, last::S) where {C,T,S}
+function _joinio(io, ::Type{C}, strings, num, delim::T, last::S) where {C,T,S}
     # Could speed this up in the common case where delim ===
     delbuf = (T <: AbstractString && cse(delim) === C) ? delim : convert(Str{C}, delim)
     lastbuff = (S <: AbstractString && cse(last) === C) ? last : convert(Str{C}, last)
@@ -269,12 +269,12 @@ end
 
 function _joincvt(::Type{C}, strings, delim) where {C}
     (num = length(strings)) < 2 && return num == 0 ? empty_str(C) : convert(Str{C}, strings[1])
-    Str(C, String(take!(_joinio(IOBuffer(), C, strings, delim))))
+    Str(C, String(take!(_joinio(IOBuffer(), C, strings, num, delim))))
 end
 
 function _joincvt(::Type{C}, strings, delim, last) where {C}
     (num = length(strings)) < 2 && return num == 0 ? empty_str(C) : convert(Str{C}, strings[1])
-    Str(C, String(take!(_joinio(IOBuffer(), C, strings, delim, last))))
+    Str(C, String(take!(_joinio(IOBuffer(), C, strings, num, delim, last))))
 end
 
 function _join(::Type{C}, strings) where {C}
@@ -365,9 +365,9 @@ end
 join(io::IO, strings::AbstractArray{<:MaybeSub{<:Str}}) =
     (_joinio(io, calc_type(strings), strings) ; nothing)
 join(io::IO, strings::AbstractArray{<:MaybeSub{<:Str}}, delim) =
-    (_joinio(io, calc_type(strings), strings, delim) ; nothing)
+    (_joinio(io, calc_type(strings), strings, length(strings), delim) ; nothing)
 join(io::IO, strings::AbstractArray{<:MaybeSub{<:Str}}, delim, last) =
-    (_joinio(io, calc_type(strings), strings, delim, last) ; nothing)
+    (_joinio(io, calc_type(strings), strings, length(strings), delim, last) ; nothing)
 
 join(strings::AbstractArray{<:MaybeSub{<:Str}}) =
     _joincvt(calc_type(strings), strings)
