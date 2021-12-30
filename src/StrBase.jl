@@ -34,7 +34,11 @@ using ModuleInterfaceTools
              MS_UTF8, MS_UTF16, MS_UTF32, MS_SubUTF32, MS_Latin, MS_ByteStr, MS_RawUTF8,
              _wrap_substr, _empty_sub,
              AccessType, UInt16_U, UInt32_U, UInt16_S, UInt32_S, UInt16_US, UInt32_US,
-             alignedtype, swappedtype, checkkeep, splitarr, __split, __rsplit, __replace
+             alignedtype, swappedtype, checkkeep, splitarr, __rsplit, __replace
+
+@static if !isdefined(Base, :eachsplit)
+    @api develop __split
+end
 
 using Base: @_inline_meta, @propagate_inbounds, @_propagate_inbounds_meta, RefValue
 
