@@ -1,7 +1,7 @@
 #=
 Utility functions for Str strings
 
-Copyright 2018-2020 Gandalf Software, Inc., Scott P. Jones,
+Copyright 2018-2021 Gandalf Software, Inc., Scott P. Jones,
 and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based initially on julia/test/strings/util.jl
@@ -65,6 +65,7 @@ rpad(ch::Chr, cnt::Integer, pad::AbstractChar=' ') =
 const SetOfChars =
     Union{Tuple{Vararg{<:AbstractChar}},AbstractVector{<:AbstractChar},Set{<:AbstractChar}}
 
+@static if !isdefined(Base, :eachsplit)
 function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     pos = 1
     lst = lastindex(str)
@@ -84,6 +85,7 @@ function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
         end
     end
     (keep_empty || pos <= lst) ? push!(strs, SubString(str, pos)) : strs
+end
 end
 
 function __rsplit(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
@@ -111,10 +113,9 @@ splitarr(::MaybeSub{String}) = SubString{String}[]
 splitarr(::MaybeSub{T}) where {T<:Str} =
     SubString{Str{basecse(T),Nothing,Nothing,Nothing}}[]
 
+@static if !isdefined(Base, :eachsplit)
 Base._split(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
     __split(str, splitter, limit, keepempty, vec)
-Base._rsplit(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
-    __rsplit(str, splitter, limit, keepempty, vec)
 
 split(str::MaybeSub{<:Str}, splitter;
       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
@@ -127,6 +128,10 @@ split(str::MaybeSub{<:Str}, splitter::AbstractChar;
 split(str::MaybeSub{<:Str}, splitter::SetOfChars;
       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __split(str, in(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(str))
+end
+
+Base._rsplit(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
+    __rsplit(str, splitter, limit, keepempty, vec)
 
 rsplit(str::MaybeSub{<:Str}, splitter;
        limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =

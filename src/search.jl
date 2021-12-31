@@ -121,20 +121,14 @@ found(::Type{<:AbstractString}, v) = v != 0
 find_result(::Type{<:AbstractString}, v) = v
 
 nothing_sentinel(i) = first(i) == 0 ? nothing : i
-Base.findfirst(a, b::Str)   = nothing_sentinel(find(First, a, b))
-Base.findlast(a, b::Str)    = nothing_sentinel(find(Last, a, b))
-Base.findnext(a, b::Str, i) = nothing_sentinel(find(Fwd, a, b, i))
-Base.findprev(a, b::Str, i) = nothing_sentinel(find(Rev, a, b, i))
-Base.findfirst(a::Str, b::AbstractString)   = nothing_sentinel(find(First, a, b))
-Base.findlast(a::Str, b::AbstractString)    = nothing_sentinel(find(Last, a, b))
-Base.findnext(a::Str, b::AbstractString, i) = nothing_sentinel(find(Fwd, a, b, i))
-Base.findprev(a::Str, b::AbstractString, i) = nothing_sentinel(find(Rev, a, b, i))
-
 # Fix ambiguities caused by addition of new findfirst definition to base
-Base.findfirst(a::AbstractChar, b::Str)   = nothing_sentinel(find(First, a, b))
-Base.findlast(a::AbstractChar, b::Str)    = nothing_sentinel(find(Last, a, b))
-Base.findnext(a::AbstractChar, b::Str, i) = nothing_sentinel(find(Fwd, a, b, i))
-Base.findprev(a::AbstractChar, b::Str, i) = nothing_sentinel(find(Rev, a, b, i))
+for (S,T) in ((:AbstractString, :Str), (:Str, :AbstractString), (:Str, :Str),
+              (:Function, :Str), (:AbstractChar, :Str))
+    @eval Base.findfirst(a::$S, b::$T) = nothing_sentinel(find(First, a, b))
+    @eval Base.findlast(a::$S, b::$T)    = nothing_sentinel(find(Last, a, b))
+    @eval Base.findnext(a::$S, b::$T, i::Integer) = nothing_sentinel(find(Fwd, a, b, i))
+    @eval Base.findprev(a::$S, b::$T, i::Integer) = nothing_sentinel(find(Rev, a, b, i))
+end
 
 function find(::Type{D}, fun::Function, str::AbstractString, pos::Integer) where {D<:Direction}
     pos < Int(D===Fwd) && (@boundscheck boundserr(str, pos); return 0)
