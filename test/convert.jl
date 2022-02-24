@@ -1,3 +1,8 @@
+# Typos in Latin conversions
+
+@test convert(StrBase._LatinStr, SubString(LatinStr("abc"))) == ASCIIStr("abc")
+@test convert(LatinStr, UInt8[]) == ""
+
 # issue #11551 (#11004,#10959)
 function tstcvt(strUTF8::UTF8Str, strUTF16::UTF16Str, strUTF32::UTF32Str)
     @test utf16(strUTF8) == strUTF16
