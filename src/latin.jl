@@ -1,7 +1,8 @@
 #=
 LatinStr/_LatinStr type (ISO Latin1 8-bit subset of Unicode)
 
-Copyright 2017 Gandalf Software, Inc., Scott P. Jones, and other contributors to the Julia language
+Copyright 2017-2022 Gandalf Software, Inc., Scott P. Jones,
+and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based in part on code for ASCIIString that used to be in Julia
 =#
@@ -50,7 +51,7 @@ const LatinSubStr  = SubString{<:Str{LatinCSE}}
 const _LatinSubStr = SubString{<:Str{_LatinCSE}}
 
 _cpyconvert(::Type{C}, str) where {C} = Str(C, _copysub(str))::Str{C,Nothing,Nothing,Nothing}
-_cpysubset(::Type{_LatinCSE}, str) = Str(is_ascii(s) ? ASCIICSE : _LatinCSE, _copysub(s))
+_cpysubset(::Type{_LatinCSE}, str) = Str(is_ascii(str) ? ASCIICSE : _LatinCSE, _copysub(str))
 
 convert(::Type{<:Str{LatinCSE}}, s::Str{LatinCSE})  = s
 convert(::Type{<:Str{LatinCSE}}, s::Str{ASCIICSE})  = _cpyconvert(LatinCSE, s)
@@ -167,7 +168,7 @@ end
 
 function convert(::Type{<:Str{C}}, vec::Vector{CU}) where {C<:Latin_CSEs,CU<:CodeUnitTypes}
     # handle zero length string quickly
-    (len = length(vec)) == 0 && return _empty_str(C)
+    (len = length(vec)) == 0 && return empty_str(C)
     @preserve vec begin
         pnt = pointer(vec)
         # get number of bytes to allocate
