@@ -21,6 +21,9 @@ legacy_types = Dict(ASCIIStr => to_ascii,
                     UTF16Str => utf16,
                     UTF32Str => utf32)
 
+const errtype =
+    @static isdefined(Base, :CanonicalIndexError) ? Base.CanonicalIndexError : ErrorException
+
 ##  create type specific test strings
 test_strings_base = Dict()
 for T in AllCharTypes
@@ -872,7 +875,7 @@ end
         @test u[1] == 0xe2
         @test u[2] == 0x88
         @test u[8] == 0x79
-        @test_throws ErrorException (u[1] = 0x00)
+        @test_throws errtype (u[1] = 0x00)
         @test collect(u) == b"∀x∃y"
     end
 
