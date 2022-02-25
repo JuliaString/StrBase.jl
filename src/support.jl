@@ -726,14 +726,14 @@ _fwd_memchr(ptr::Ptr{T}, byt::T, len::Integer) where {T<:UInt8} =
     ccall(:memchr, Ptr{T}, (Ptr{T}, Int32, Csize_t), ptr, byt, len)
 
 _fwd_memchr(beg::Ptr{T}, wchr::T, len::Integer) where {T<:OthChr} =
-    _fwd_memchr(beg, ch, bytoff(beg, len))
+    _fwd_memchr(beg, wchr, bytoff(beg, len))
 
 _fwd_memchr(ptr::Ptr{T}, byt::T, fin::Ptr{T}) where {T<:UInt8} =
     ptr < fin ? _fwd_memchr(ptr, byt, fin - ptr) : C_NULL
 
 function _fwd_memchr(pnt::Ptr{T}, wchr::T, fin::Ptr{T}) where {T<:OthChr}
     while pnt < fin
-        get_codeunit(pnt) == ch && return pnt
+        get_codeunit(pnt) == wchr && return pnt
         pnt += sizeof(T)
     end
     C_NULL
