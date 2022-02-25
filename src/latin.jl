@@ -22,7 +22,7 @@ function string(collection::MS_ASCIILatin...)
     @inbounds for str in collection
         len += ncodeunits(str)
     end
-    buf, pnt = _allocate(len)
+    buf, pnt = _allocate(UInt8, len)
     @inbounds for str in collection
         len = ncodeunits(str)
         _memcpy(pnt, pointer(str), len)

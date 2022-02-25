@@ -30,6 +30,14 @@ for T in AllCharTypes
     test_strings_base[T] = [String(rand(T, len)) for len in test_string_length]
 end
 
+@testset "string" begin
+    a = ASCIIStr("ascii")
+    b = LatinStr("latin")
+    @test typeof(a * a) === ASCIIStr
+    @test typeof(b * b) === LatinStr
+    @test typeof(a * b) === LatinStr
+end
+
 @testset "constructors" begin
     for (ST, type_list) in compat_types, CT in type_list, str in test_strings_base[CT]
         @eval @test convert($ST, $str) == $str
