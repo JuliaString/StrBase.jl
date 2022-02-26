@@ -65,7 +65,6 @@ rpad(ch::Chr, cnt::Integer, pad::AbstractChar=' ') =
 const SetOfChars =
     Union{Tuple{Vararg{<:AbstractChar}},AbstractVector{<:AbstractChar},Set{<:AbstractChar}}
 
-@static if !isdefined(Base, :eachsplit)
 function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     pos = 1
     lst = lastindex(str)
@@ -85,7 +84,6 @@ function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
         end
     end
     (keep_empty || pos <= lst) ? push!(strs, SubString(str, pos)) : strs
-end
 end
 
 function __rsplit(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
@@ -113,22 +111,25 @@ splitarr(::MaybeSub{String}) = SubString{String}[]
 splitarr(::MaybeSub{T}) where {T<:Str} =
     SubString{Str{basecse(T),Nothing,Nothing,Nothing}}[]
 
-@static if !isdefined(Base, :eachsplit)
+@static if isdefined(Base, :eachsplit)
+const _SplitTypes = MaybeSub{<:Str{<:Union{_LatinCSE,_UCS2CSE,_UTF32CSE}}}
+else
+const _SplitTypes = MaybeSub{<:Str}
 Base._split(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
     __split(str, splitter, limit, keepempty, vec)
+end
 
-split(str::MaybeSub{<:Str}, splitter;
+split(str::_SplitTypes, splitter;
       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __split(str, splitter, limit, checkkeep(keepempty, keep, :split), splitarr(str))
 
-split(str::MaybeSub{<:Str}, splitter::AbstractChar;
+split(str::_SplitTypes, splitter::AbstractChar;
       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __split(str, isequal(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(str))
 
-split(str::MaybeSub{<:Str}, splitter::SetOfChars;
+split(str::_SplitTypes, splitter::SetOfChars;
       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __split(str, in(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(str))
-end
 
 Base._rsplit(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
     __rsplit(str, splitter, limit, keepempty, vec)
