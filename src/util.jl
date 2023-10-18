@@ -1,7 +1,7 @@
 #=
 Utility functions for Str strings
 
-Copyright 2018-2021 Gandalf Software, Inc., Scott P. Jones,
+Copyright 2018-2023 Gandalf Software, Inc., Scott P. Jones,
 and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based initially on julia/test/strings/util.jl
@@ -131,16 +131,21 @@ split(str::_SplitTypes, splitter::SetOfChars;
       limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __split(str, in(splitter), limit, checkkeep(keepempty, keep, :split), splitarr(str))
 
+@static if isdefined(Base, :eachrsplit)
+const _RSplitTypes = MaybeSub{<:Str{<:Union{_LatinCSE,_UCS2CSE,_UTF32CSE}}}
+else
+const _RSplitTypes = MaybeSub{<:Str}
 Base._rsplit(str::MaybeSub{<:Str}, splitter, limit, keepempty, vec) =
     __rsplit(str, splitter, limit, keepempty, vec)
+end
 
-rsplit(str::MaybeSub{<:Str}, splitter;
+rsplit(str::_RSplitTypes, splitter;
        limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __rsplit(str, splitter, limit, checkkeep(keepempty, keep, :rsplit), splitarr(str))
-rsplit(str::MaybeSub{<:Str}, splitter::AbstractChar;
+rsplit(str::_RSplitTypes, splitter::AbstractChar;
        limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __rsplit(str, isequal(splitter), limit, checkkeep(keepempty, keep, :rsplit), splitarr(str))
-rsplit(str::MaybeSub{<:Str}, splitter::SetOfChars;
+rsplit(str::_RSplitTypes, splitter::SetOfChars;
        limit::Integer=0, keepempty::Bool=true, keep::Union{Nothing,Bool}=nothing) =
     __rsplit(str, in(splitter), limit, checkkeep(keepempty, keep, :rsplit), splitarr(str))
 
