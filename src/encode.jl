@@ -195,6 +195,8 @@ function convert(::Type{T},
     Str(C, _str_cpy(UInt8, vec, length(vec)))
 end
 
+convert(::Type{UniStr}, vec::AbstractArray{UInt8}) = _str(vec)
+
 convert(::Type{<:Str{C}}, vec::AbstractArray{UInt8}) where {C<:Union{BinaryCSE,Text1CSE}} =
     Str(C, _str_cpy(UInt8, vec, length(vec)))
 convert(::Type{<:Str{Text2CSE}}, vec::AbstractArray{UInt16}) =
@@ -210,6 +212,7 @@ convert(::Type{<:Str{Text4CSE}}, vec::AbstractArray{UInt32}) =
 (::Type{UniStr})(str::String)         = _str(str)
 (::Type{UniStr})(str::Str{<:Union{ASCIICSE,SubSet_CSEs}}) = str
 
+# need to fix this, should only allow already validated strings
 function convert(::Type{UniStr}, str::T) where {T<:Str}
     # handle zero length string quickly
     is_empty(str) && return empty_ascii
