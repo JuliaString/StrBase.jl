@@ -63,7 +63,7 @@ rpad(ch::Chr, cnt::Integer, pad::AbstractChar=' ') =
     (cnt -= 1) <= 0 ? string(ch) : string(ch, pad^cnt)
 
 const SetOfChars =
-    Union{Tuple{Vararg{<:AbstractChar}},AbstractVector{<:AbstractChar},Set{<:AbstractChar}}
+    Union{Tuple{Vararg{AbstractChar}},AbstractVector{<:AbstractChar},Set{<:AbstractChar}}
 
 function __split(str, splitter, limit::Integer, keep_empty::Bool, strs::Vector)
     pos = 1
