@@ -1,7 +1,7 @@
 #=
 Search functions for Str strings
 
-Copyright 2018-2020 Gandalf Software, Inc., Scott P. Jones,
+Copyright 2018-2023 Gandalf Software, Inc., Scott P. Jones,
 and other contributors to the Julia language
 Licensed under MIT License, see LICENSE.md
 Based in part on julia/base/strings/search.jl
@@ -131,7 +131,11 @@ for (S,T) in ((:AbstractString, :Str), (:Str, :AbstractString), (:Str, :Str),
 end
 
 function find(::Type{D}, fun::Function, str::AbstractString, pos::Integer) where {D<:Direction}
-    pos < Int(D===Fwd) && (@boundscheck boundserr(str, pos); return 0)
+    if pos < 1
+        D === Fwd && @boundscheck boundserr(str, pos)
+        # Just return 0 if < 0 for Rev (match Base bug)
+        return 0
+    end
     if pos > (len = ncodeunits(str))
         @boundscheck pos > len+1 && boundserr(str, pos)
         return 0
@@ -157,7 +161,11 @@ find(::Type{D}, pred::P, str::AbstractString,
     find(D, pred.x, str, pos)
 
 function find(::Type{D}, ch::AbstractChar, str::AbstractString, pos::Integer) where {D<:Direction}
-    pos < Int(D===Fwd) && (@boundscheck boundserr(str, pos); return 0)
+    if pos < 1
+        D === Fwd && @boundscheck boundserr(str, pos)
+        # Just return 0 if < 0 for Rev (match Base bug)
+        return 0
+    end
     if pos > (len = ncodeunits(str))
         @boundscheck pos > len+1 && boundserr(str, pos)
         return 0
