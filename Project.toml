@@ -23,6 +23,7 @@ Random  = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 test = ["Test", "Random"]
 
 [compat]
+Unicode = "1.11"
 julia = "^1.13"
 ModuleInterfaceTools = "1"
 StrAPI = "^1.1"
