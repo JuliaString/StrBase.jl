@@ -44,7 +44,9 @@ const SCU = SingleCU()
 const MCU = MultiCU()
 
 include("types.jl")
-include("fixparse.jl")
+@static if isdefined(Base, :parseint_iterate)
+    include("fixparse.jl")
+end
 include("chars.jl")
 include("access.jl")
 include("traits.jl")
